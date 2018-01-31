@@ -1,8 +1,4 @@
-/*
-	Read Only by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
-*/
+
 
 (function($) {
 
@@ -110,4 +106,25 @@
 
 	});
 
+
 })(jQuery);
+
+function validateMessage() {
+	
+	var name =document.getElementById('name');
+	var email =document.getElementById('email');
+	var subject =document.getElementById('subject');
+	var message =document.getElementById('message');
+
+    var elements = [name, email, subject, message];
+
+	for (i = 0; i < elements.length; i++) { 
+		if(elements[i].value === ""){
+       		 elements[i].style.borderColor = "red";
+       		 return false;
+  	 	 }
+	}
+   
+   return true;
+    
+}
