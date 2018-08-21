@@ -537,6 +537,21 @@
 			</div>
 
 		<!-- Scripts -->
+			<script type="text/javascript">
+				var trackcmp_email = '';
+				console.log("active campaign running");
+				var trackcmp = document.createElement("script");
+				trackcmp.async = true;
+				trackcmp.type = 'text/javascript';
+				trackcmp.src = '//trackcmp.net/visit?actid=25512320&e='+encodeURIComponent(trackcmp_email)+'&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(window.location.href);
+				var trackcmp_s = document.getElementsByTagName("script");
+				if (trackcmp_s.length) {
+					trackcmp_s[0].parentNode.appendChild(trackcmp);
+				} else {
+					var trackcmp_h = document.getElementsByTagName("head");
+					trackcmp_h.length && trackcmp_h[0].appendChild(trackcmp);
+	 			}
+            </script>
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.scrollzer.min.js"></script>
 			<script src="assets/js/jquery.scrolly.min.js"></script>
