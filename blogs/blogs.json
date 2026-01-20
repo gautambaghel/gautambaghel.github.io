@@ -1,0 +1,161 @@
+{
+  "categories": {
+    "hashicorp": {
+      "name": "HashiCorp (IBM)",
+      "description": "Technical articles on Terraform, infrastructure automation, and cloud best practices",
+      "icon": "fa-solid fa-cloud"
+    },
+    "blackduck": {
+      "name": "Black Duck (Synopsys)",
+      "description": "Security scanning, software composition analysis, and DevSecOps insights",
+      "icon": "fa-solid fa-shield-halved"
+    },
+    "personal": {
+      "name": "Personal",
+      "description": "Thoughts on technology, career, and life",
+      "icon": "fa-solid fa-pen-nib"
+    }
+  },
+  "posts": [
+    {
+      "id": "kiro-powers-launch-partner",
+      "title": "HashiCorp is a Kiro Powers Launch Partner",
+      "date": "2025-12-04",
+      "category": "hashicorp",
+      "excerpt": "Announcing HashiCorp's partnership with Kiro to bring AI-powered infrastructure capabilities to developers.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/hashicorp-is-a-kiro-powers-launch-partner",
+      "file": "hashicorp/kiro-powers-launch-partner.md",
+      "tags": ["kiro", "ai", "partnership", "terraform"]
+    },
+    {
+      "id": "terraform-vault-mcp-servers",
+      "title": "Build Secure, AI-Driven Workflows with Terraform and Vault MCP Servers",
+      "date": "2025-07-16",
+      "category": "hashicorp",
+      "excerpt": "How to leverage the Model Context Protocol (MCP) servers for Terraform and Vault to build secure, AI-driven infrastructure workflows.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/build-secure-ai-driven-workflows-with-new-terraform-and-vault-mcp-servers",
+      "file": "hashicorp/terraform-vault-mcp-servers.md",
+      "tags": ["terraform", "vault", "mcp", "ai", "security"]
+    },
+    {
+      "id": "terraform-amazon-codewhisperer",
+      "title": "Accelerate Your Terraform Development with Amazon CodeWhisperer",
+      "date": "2023-11-29",
+      "category": "hashicorp",
+      "excerpt": "Using Amazon CodeWhisperer to speed up Terraform configuration development with AI-powered code suggestions.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/accelerate-your-terraform-development-with-amazon-codewhisperer",
+      "file": "hashicorp/terraform-amazon-codewhisperer.md",
+      "tags": ["terraform", "aws", "codewhisperer", "ai", "developer-tools"]
+    },
+    {
+      "id": "hashicorp-google-cloud-next",
+      "title": "HashiCorp at Google Cloud Next: Seamless Infrastructure Deployment and Management",
+      "date": "2023-08-23",
+      "category": "hashicorp",
+      "excerpt": "Highlights from Google Cloud Next showcasing seamless infrastructure deployment and management with HashiCorp tools.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/hashicorp-at-google-cloud-next-seamless-infrastructure-deployment-and-management",
+      "file": "hashicorp/hashicorp-google-cloud-next.md",
+      "tags": ["terraform", "gcp", "google-cloud", "conference"]
+    },
+    {
+      "id": "terraform-dynamic-credentials-aws",
+      "title": "Using Terraform Dynamic Provider Credentials in Your AWS Landing Zones",
+      "date": "2023-07-28",
+      "category": "hashicorp",
+      "excerpt": "Implementing dynamic provider credentials with Terraform Cloud for secure AWS landing zone deployments.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/using-terraform-dynamic-provider-credentials-in-your-aws-landing-zones",
+      "file": "hashicorp/terraform-dynamic-credentials-aws.md",
+      "tags": ["terraform", "aws", "security", "credentials", "landing-zones"]
+    },
+    {
+      "id": "terraform-azure-linux-aks",
+      "title": "Terraform Adds Support for Azure Linux Container Host for Azure Kubernetes Service",
+      "date": "2023-05-24",
+      "category": "hashicorp",
+      "excerpt": "New Terraform provider support for Azure Linux container host on AKS, enabling streamlined Kubernetes deployments.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/terraform-adds-support-azure-linux-container-host-azure-kubernetes-service",
+      "file": "hashicorp/terraform-azure-linux-aks.md",
+      "tags": ["terraform", "azure", "kubernetes", "aks", "containers"]
+    },
+    {
+      "id": "run-tasks-checkpoint-rapid7-zscaler",
+      "title": "New Terraform Run Tasks From Check Point, Rapid7, Zscaler and Others",
+      "date": "2022-12-16",
+      "category": "hashicorp",
+      "excerpt": "Announcing new Terraform Cloud run task integrations with security and compliance partners.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/new-terraform-run-tasks-from-checkpoint-rapid7-zscaler-and-others",
+      "file": "hashicorp/run-tasks-checkpoint-rapid7-zscaler.md",
+      "tags": ["terraform", "run-tasks", "security", "integrations"]
+    },
+    {
+      "id": "run-tasks-terraform-registry",
+      "title": "Run Tasks Are Now Available in the Terraform Registry",
+      "date": "2022-11-17",
+      "category": "hashicorp",
+      "excerpt": "Terraform Registry now includes run tasks, making it easier to discover and implement workflow integrations.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/run-tasks-are-now-available-in-the-terraform-registry",
+      "file": "hashicorp/run-tasks-terraform-registry.md",
+      "tags": ["terraform", "run-tasks", "registry", "terraform-cloud"]
+    },
+    {
+      "id": "run-tasks-ecosystem-growth",
+      "title": "Terraform Run Tasks Ecosystem Continues to Grow",
+      "date": "2022-08-25",
+      "category": "hashicorp",
+      "excerpt": "An overview of the expanding Terraform run tasks ecosystem and new partner integrations.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/terraform-run-tasks-ecosystem-continues-to-grow",
+      "file": "hashicorp/run-tasks-ecosystem-growth.md",
+      "tags": ["terraform", "run-tasks", "ecosystem", "partners"]
+    },
+    {
+      "id": "consul-apigee-google-cloud",
+      "title": "Automate Networking Across Google Cloud Runtimes with Consul and Apigee",
+      "date": "2022-06-15",
+      "category": "hashicorp",
+      "excerpt": "Using Consul and Apigee together to automate service networking across Google Cloud environments.",
+      "external": true,
+      "url": "https://www.hashicorp.com/en/blog/automate-networking-across-google-cloud-runtimes-with-consul-and-apigee",
+      "file": "hashicorp/consul-apigee-google-cloud.md",
+      "tags": ["consul", "gcp", "apigee", "networking", "service-mesh"]
+    },
+    {
+      "id": "coverity-sarif-integration",
+      "title": "Converting Coverity Results to SARIF for GitHub Code Scanning",
+      "date": "2023-08-15",
+      "category": "blackduck",
+      "excerpt": "How to integrate Coverity security scan results with GitHub's code scanning feature using the SARIF format.",
+      "external": false,
+      "file": "blackduck/coverity-sarif.md",
+      "tags": ["coverity", "sarif", "security", "github"]
+    },
+    {
+      "id": "sca-best-practices",
+      "title": "Software Composition Analysis Best Practices",
+      "date": "2023-05-20",
+      "category": "blackduck",
+      "excerpt": "Best practices for implementing Software Composition Analysis (SCA) in your development workflow.",
+      "external": false,
+      "file": "blackduck/sca-best-practices.md",
+      "tags": ["sca", "security", "devsecops", "best-practices"]
+    },
+    {
+      "id": "getting-started-with-blogs",
+      "title": "Welcome to My Blog",
+      "date": "2025-01-19",
+      "category": "personal",
+      "excerpt": "An introduction to my personal blog where I share thoughts on technology, infrastructure, and software engineering.",
+      "external": false,
+      "file": "personal/welcome.md",
+      "tags": ["introduction", "personal"]
+    }
+  ]
+}

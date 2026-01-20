@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Gautam Baghel</title>
+    <link rel="icon" href="images/favicon.png">
+    <link rel="stylesheet" href="assets/css/modern.css">
+    <link rel="stylesheet" href="assets/css/blog.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar scrolled">
+        <div class="nav-brand">
+            <a href="index.html">GB</a>
+        </div>
+        <button class="nav-toggle" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#projects">Projects</a></li>
+            <li><a href="blog.html" class="active">Blog</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <main class="blog-main">
+        <section class="blog-hero">
+            <div class="container">
+                <h1>Blog</h1>
+                <p>Thoughts on infrastructure, automation, and software engineering</p>
+            </div>
+        </section>
+
+        <section class="blog-content">
+            <div class="container">
+                <div class="blog-layout">
+                    <aside class="blog-sidebar">
+                        <div class="sidebar-section">
+                            <h3>Categories</h3>
+                            <ul class="category-list">
+                                <li>
+                                    <button class="category-btn active" data-category="all">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                        <span>All Posts</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="category-btn" data-category="hashicorp">
+                                        <i class="fa-solid fa-cloud"></i>
+                                        <span>HashiCorp (IBM)</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="category-btn" data-category="blackduck">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        <span>Black Duck (Synopsys)</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="category-btn" data-category="personal">
+                                        <i class="fa-solid fa-pen-nib"></i>
+                                        <span>Personal</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="sidebar-section">
+                            <h3>Tags</h3>
+                            <div class="tag-cloud" id="tagCloud"></div>
+                        </div>
+                    </aside>
+
+                    <div class="blog-posts">
+                        <div class="posts-header">
+                            <h2 id="categoryTitle">All Posts</h2>
+                            <span class="post-count" id="postCount"></span>
+                        </div>
+                        <div class="posts-grid" id="postsGrid">
+                            <!-- Posts will be dynamically loaded -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Designed & Built by Gautam Baghel</p>
+            <p class="footer-note">Built with modern CSS & vanilla JavaScript</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile navigation toggle
+        var navToggle = document.querySelector('.nav-toggle');
+        var navLinks = document.querySelector('.nav-links');
+
+        navToggle.addEventListener('click', function() {
+            navLinks.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        // Blog functionality
+        var blogsData = null;
+        var currentCategory = 'all';
+
+        // Fetch blogs data
+        function fetchBlogs() {
+            var postsGrid = document.getElementById('postsGrid');
+            postsGrid.innerHTML = '<p class="loading-message">Loading posts...</p>';
+
+            return fetch('blogs/blogs.json')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP error ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    blogsData = data;
+                    renderPosts();
+                    renderTags();
+                    return data;
+                })
+                .catch(function(error) {
+                    console.error('Error loading blogs:', error);
+                    postsGrid.innerHTML = '<p class="error-message">Unable to load blog posts. Error: ' + error.message + '</p>';
+                });
+        }
+
+        // Render posts based on category
+        function renderPosts(category, tag) {
+            category = category || 'all';
+            tag = tag || null;
+
+            var postsGrid = document.getElementById('postsGrid');
+            var categoryTitle = document.getElementById('categoryTitle');
+            var postCount = document.getElementById('postCount');
+
+            if (!blogsData || !blogsData.posts) {
+                postsGrid.innerHTML = '<p class="error-message">No blog data available.</p>';
+                return;
+            }
+
+            var posts = blogsData.posts.slice(); // Create a copy
+
+            // Filter by category
+            if (category !== 'all') {
+                posts = posts.filter(function(post) {
+                    return post.category === category;
+                });
+            }
+
+            // Filter by tag
+            if (tag) {
+                posts = posts.filter(function(post) {
+                    return post.tags && post.tags.indexOf(tag) !== -1;
+                });
+            }
+
+            // Sort by date (newest first)
+            posts.sort(function(a, b) {
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            // Update header
+            if (tag) {
+                categoryTitle.textContent = 'Tagged: ' + tag;
+            } else if (category === 'all') {
+                categoryTitle.textContent = 'All Posts';
+            } else {
+                var catInfo = blogsData.categories[category];
+                categoryTitle.textContent = catInfo ? catInfo.name : category;
+            }
+            postCount.textContent = posts.length + ' post' + (posts.length !== 1 ? 's' : '');
+
+            // Render posts
+            if (posts.length === 0) {
+                postsGrid.innerHTML = '<p class="no-posts">No posts found in this category yet.</p>';
+                return;
+            }
+
+            var html = posts.map(function(post) {
+                var categoryInfo = blogsData.categories[post.category] || {};
+                var dateObj = new Date(post.date);
+                var date = dateObj.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                var tagsHtml = '';
+                if (post.tags && post.tags.length > 0) {
+                    tagsHtml = post.tags.map(function(t) {
+                        return '<span class="tag" data-tag="' + t + '">' + t + '</span>';
+                    }).join('');
+                }
+
+                var externalBadge = post.external ? '<span class="external-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i> External</span>' : '';
+
+                return '<article class="post-card" data-post-id="' + post.id + '" data-external="' + post.external + '" data-url="' + (post.url || '') + '" data-file="' + (post.file || '') + '">' +
+                    '<div class="post-category">' +
+                        '<i class="' + (categoryInfo.icon || 'fa-solid fa-file-alt') + '"></i>' +
+                        '<span>' + (categoryInfo.name || post.category) + '</span>' +
+                    '</div>' +
+                    '<h3 class="post-title">' + post.title + '</h3>' +
+                    '<p class="post-excerpt">' + post.excerpt + '</p>' +
+                    '<div class="post-meta">' +
+                        '<span class="post-date">' +
+                            '<i class="fa-regular fa-calendar"></i> ' +
+                            date +
+                        '</span>' +
+                        externalBadge +
+                    '</div>' +
+                    '<div class="post-tags">' + tagsHtml + '</div>' +
+                '</article>';
+            }).join('');
+
+            postsGrid.innerHTML = html;
+
+            // Add click handlers to posts
+            var postCards = document.querySelectorAll('.post-card');
+            for (var i = 0; i < postCards.length; i++) {
+                postCards[i].addEventListener('click', handlePostClick);
+            }
+
+            // Add click handlers to tags
+            var tagElements = document.querySelectorAll('.post-tags .tag');
+            for (var j = 0; j < tagElements.length; j++) {
+                tagElements[j].addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var tagName = e.target.getAttribute('data-tag');
+                    renderPosts('all', tagName);
+                });
+            }
+        }
+
+        // Handle post click
+        function handlePostClick(e) {
+            var card = e.currentTarget;
+            var postId = card.getAttribute('data-post-id');
+
+            if (postId) {
+                // Always navigate to local post page (handles both local and external posts)
+                window.location.href = 'post.html?id=' + encodeURIComponent(postId);
+            }
+        }
+
+        // Render tag cloud
+        function renderTags() {
+            var tagCloud = document.getElementById('tagCloud');
+            var allTags = {};
+
+            if (!blogsData || !blogsData.posts) return;
+
+            blogsData.posts.forEach(function(post) {
+                if (post.tags) {
+                    post.tags.forEach(function(tag) {
+                        allTags[tag] = (allTags[tag] || 0) + 1;
+                    });
+                }
+            });
+
+            var sortedTags = Object.keys(allTags)
+                .map(function(tag) {
+                    return [tag, allTags[tag]];
+                })
+                .sort(function(a, b) {
+                    return b[1] - a[1];
+                })
+                .slice(0, 15);
+
+            tagCloud.innerHTML = sortedTags.map(function(item) {
+                return '<button class="tag-btn" data-tag="' + item[0] + '">' + item[0] + ' <span>(' + item[1] + ')</span></button>';
+            }).join('');
+
+            // Add click handlers
+            var tagBtns = document.querySelectorAll('.tag-btn');
+            for (var i = 0; i < tagBtns.length; i++) {
+                tagBtns[i].addEventListener('click', function(e) {
+                    var tag = e.currentTarget.getAttribute('data-tag');
+                    renderPosts('all', tag);
+                });
+            }
+        }
+
+        // Category filter buttons
+        var categoryBtns = document.querySelectorAll('.category-btn');
+        for (var i = 0; i < categoryBtns.length; i++) {
+            categoryBtns[i].addEventListener('click', function(e) {
+                var allBtns = document.querySelectorAll('.category-btn');
+                for (var j = 0; j < allBtns.length; j++) {
+                    allBtns[j].classList.remove('active');
+                }
+                e.currentTarget.classList.add('active');
+                currentCategory = e.currentTarget.getAttribute('data-category');
+                renderPosts(currentCategory);
+                // Update URL hash
+                if (history.pushState) {
+                    history.pushState(null, '', '#' + currentCategory);
+                }
+            });
+        }
+
+        // Handle URL hash for category filtering
+        function handleHashChange() {
+            var hash = window.location.hash.substring(1);
+            if (hash && ['hashicorp', 'blackduck', 'personal', 'all'].indexOf(hash) !== -1) {
+                currentCategory = hash;
+                var allBtns = document.querySelectorAll('.category-btn');
+                for (var i = 0; i < allBtns.length; i++) {
+                    var btnCat = allBtns[i].getAttribute('data-category');
+                    if (btnCat === hash) {
+                        allBtns[i].classList.add('active');
+                    } else {
+                        allBtns[i].classList.remove('active');
+                    }
+                }
+                if (blogsData) {
+                    renderPosts(currentCategory);
+                }
+            }
+        }
+
+        window.addEventListener('hashchange', handleHashChange);
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchBlogs().then(function() {
+                handleHashChange();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Blog Post - Gautam Baghel</title>
+    <meta name="description" id="metaDescription" content="Blog post by Gautam Baghel">
+    <meta name="author" content="Gautam Baghel">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="ogTitle" content="Blog Post - Gautam Baghel">
+    <meta property="og:description" id="ogDescription" content="Blog post by Gautam Baghel">
+    <meta property="og:url" id="ogUrl" content="">
+    <meta property="og:site_name" content="Gautam Baghel">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="twitterTitle" content="Blog Post - Gautam Baghel">
+    <meta name="twitter:description" id="twitterDescription" content="Blog post by Gautam Baghel">
+
+    <link rel="icon" href="images/favicon.png">
+    <link rel="stylesheet" href="assets/css/modern.css">
+    <link rel="stylesheet" href="assets/css/blog.css">
+    <link rel="stylesheet" href="assets/css/post.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <nav class="navbar scrolled" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">
+            <a href="index.html" aria-label="Go to homepage">GB</a>
+        </div>
+        <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#projects">Projects</a></li>
+            <li><a href="blog.html" class="active">Blog</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content" class="post-main" role="main">
+        <!-- Breadcrumb navigation -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <div class="container">
+                <ol itemscope itemtype="https://schema.org/BreadcrumbList">
+                    <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                        <a href="index.html" itemprop="item"><span itemprop="name">Home</span></a>
+                        <meta itemprop="position" content="1">
+                    </li>
+                    <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                        <a href="blog.html" itemprop="item"><span itemprop="name">Blog</span></a>
+                        <meta itemprop="position" content="2">
+                    </li>
+                    <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem" aria-current="page">
+                        <span itemprop="name" id="breadcrumbTitle">Post</span>
+                        <meta itemprop="position" content="3">
+                    </li>
+                </ol>
+            </div>
+        </nav>
+
+        <article class="post-article" itemscope itemtype="https://schema.org/BlogPosting">
+            <div class="container">
+                <!-- External Source Banner (hidden by default) -->
+                <div class="external-banner" id="externalBanner" style="display: none;" role="banner">
+                    <div class="external-banner-content">
+                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                        <span>This article was originally published on <strong id="externalSource">External Site</strong></span>
+                    </div>
+                    <a href="#" id="externalLink" class="external-banner-btn" target="_blank" rel="noopener noreferrer">
+                        View Original Article
+                        <i class="fa-solid fa-external-link" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <!-- Post Header -->
+                <header class="post-header">
+                    <div class="post-meta-top">
+                        <span class="post-category" id="postCategory">
+                            <i class="fa-solid fa-folder" aria-hidden="true"></i>
+                            <span>Category</span>
+                        </span>
+                        <time class="post-date" id="postDate" itemprop="datePublished" datetime="">
+                            <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                            <span>Date</span>
+                        </time>
+                        <span class="post-reading-time" id="readingTime">
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                            <span>5 min read</span>
+                        </span>
+                    </div>
+                    <h1 class="post-title" id="postTitle" itemprop="headline">Loading...</h1>
+                    <p class="post-excerpt" id="postExcerpt" itemprop="description"></p>
+
+                    <!-- Author info -->
+                    <div class="post-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                        <img src="images/gautam_pro.jpg" alt="Gautam Baghel" class="author-avatar" itemprop="image">
+                        <div class="author-info">
+                            <span class="author-name" itemprop="name">Gautam Baghel</span>
+                            <span class="author-title">Staff Software Engineer at HashiCorp</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Accessibility: Reading controls -->
+                <div class="reading-controls" role="region" aria-label="Reading preferences">
+                    <button class="control-btn" id="decreaseFont" aria-label="Decrease font size">
+                        <i class="fa-solid fa-minus" aria-hidden="true"></i> A
+                    </button>
+                    <button class="control-btn" id="increaseFont" aria-label="Increase font size">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> A
+                    </button>
+                    <button class="control-btn" id="toggleDyslexic" aria-label="Toggle dyslexia-friendly font">
+                        <i class="fa-solid fa-font" aria-hidden="true"></i> Dyslexia
+                    </button>
+                    <button class="control-btn" id="toggleHighContrast" aria-label="Toggle high contrast mode">
+                        <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> Contrast
+                    </button>
+                </div>
+
+                <!-- Post Content -->
+                <div class="post-content" id="postContent" itemprop="articleBody">
+                    <p class="loading-message">Loading post content...</p>
+                </div>
+
+                <!-- Tags -->
+                <footer class="post-footer">
+                    <div class="post-tags" id="postTags" role="list" aria-label="Post tags">
+                        <!-- Tags will be inserted here -->
+                    </div>
+
+                    <!-- Share buttons -->
+                    <div class="share-section" role="region" aria-label="Share this post">
+                        <span class="share-label">Share this post:</span>
+                        <div class="share-buttons">
+                            <a href="#" id="shareLinkedIn" class="share-btn linkedin" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+                                <i class="fa-brands fa-linkedin-in" aria-hidden="true"></i>
+                                <span>LinkedIn</span>
+                            </a>
+                            <a href="#" id="shareTwitter" class="share-btn twitter" target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter/X">
+                                <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
+                                <span>Twitter</span>
+                            </a>
+                            <button class="share-btn copy-link" id="copyLink" aria-label="Copy link to clipboard">
+                                <i class="fa-solid fa-link" aria-hidden="true"></i>
+                                <span>Copy Link</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Back to blog -->
+                    <div class="post-navigation">
+                        <a href="blog.html" class="back-link">
+                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                            Back to all posts
+                        </a>
+                    </div>
+                </footer>
+            </div>
+        </article>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <p>Designed & Built by Gautam Baghel</p>
+            <p class="footer-note">Built with modern CSS & vanilla JavaScript</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile navigation toggle
+        var navToggle = document.querySelector('.nav-toggle');
+        var navLinks = document.querySelector('.nav-links');
+
+        navToggle.addEventListener('click', function() {
+            var expanded = navToggle.getAttribute('aria-expanded') === 'true';
+            navToggle.setAttribute('aria-expanded', !expanded);
+            navLinks.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+
+        // Get post ID from URL
+        function getPostId() {
+            var params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // Calculate reading time
+        function calculateReadingTime(text) {
+            var wordsPerMinute = 200;
+            var words = text.trim().split(/\s+/).length;
+            var minutes = Math.ceil(words / wordsPerMinute);
+            return minutes + ' min read';
+        }
+
+        // Load post data
+        function loadPost() {
+            var postId = getPostId();
+            if (!postId) {
+                showError('No post specified');
+                return;
+            }
+
+            fetch('blogs/blogs.json')
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Failed to load blog data');
+                    return response.json();
+                })
+                .then(function(data) {
+                    var post = data.posts.find(function(p) {
+                        return p.id === postId;
+                    });
+
+                    if (!post) {
+                        showError('Post not found');
+                        return;
+                    }
+
+                    // Show external banner if this is an external post
+                    if (post.external && post.url) {
+                        showExternalBanner(post);
+                    }
+
+                    // Update page metadata
+                    updateMetadata(post, data.categories);
+
+                    // Load markdown content
+                    return fetch('blogs/' + post.file)
+                        .then(function(response) {
+                            if (!response.ok) throw new Error('Failed to load post content');
+                            return response.text();
+                        })
+                        .then(function(markdown) {
+                            renderPost(post, markdown, data.categories);
+                        });
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    showError(error.message);
+                });
+        }
+
+        // Update page metadata
+        function updateMetadata(post, categories) {
+            var categoryInfo = categories[post.category] || {};
+            var pageUrl = window.location.href;
+
+            // Page title
+            document.getElementById('pageTitle').textContent = post.title + ' - Gautam Baghel';
+            document.getElementById('metaDescription').setAttribute('content', post.excerpt);
+
+            // Open Graph
+            document.getElementById('ogTitle').setAttribute('content', post.title);
+            document.getElementById('ogDescription').setAttribute('content', post.excerpt);
+            document.getElementById('ogUrl').setAttribute('content', pageUrl);
+
+            // Twitter
+            document.getElementById('twitterTitle').setAttribute('content', post.title);
+            document.getElementById('twitterDescription').setAttribute('content', post.excerpt);
+
+            // Breadcrumb
+            document.getElementById('breadcrumbTitle').textContent = post.title;
+
+            // Share buttons
+            var linkedInUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(pageUrl);
+            var twitterUrl = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(pageUrl) + '&text=' + encodeURIComponent(post.title);
+
+            document.getElementById('shareLinkedIn').href = linkedInUrl;
+            document.getElementById('shareTwitter').href = twitterUrl;
+        }
+
+        // Render post content
+        function renderPost(post, markdown, categories) {
+            var categoryInfo = categories[post.category] || {};
+
+            // Header info
+            document.getElementById('postTitle').textContent = post.title;
+            document.getElementById('postExcerpt').textContent = post.excerpt;
+
+            var categoryEl = document.getElementById('postCategory');
+            categoryEl.querySelector('i').className = categoryInfo.icon || 'fa-solid fa-folder';
+            categoryEl.querySelector('span').textContent = categoryInfo.name || post.category;
+
+            var dateObj = new Date(post.date);
+            var dateEl = document.getElementById('postDate');
+            dateEl.setAttribute('datetime', post.date);
+            dateEl.querySelector('span').textContent = dateObj.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Reading time
+            document.getElementById('readingTime').querySelector('span').textContent = calculateReadingTime(markdown);
+
+            // Content
+            var contentEl = document.getElementById('postContent');
+            contentEl.innerHTML = marked.parse(markdown);
+
+            // Add IDs to headings for accessibility
+            var headings = contentEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            for (var i = 0; i < headings.length; i++) {
+                var heading = headings[i];
+                var id = heading.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                heading.id = id;
+            }
+
+            // Tags
+            if (post.tags && post.tags.length > 0) {
+                var tagsEl = document.getElementById('postTags');
+                tagsEl.innerHTML = post.tags.map(function(tag) {
+                    return '<a href="blog.html#' + tag + '" class="tag" role="listitem">' + tag + '</a>';
+                }).join('');
+            }
+        }
+
+        // Show external banner
+        function showExternalBanner(post) {
+            var banner = document.getElementById('externalBanner');
+            var sourceEl = document.getElementById('externalSource');
+            var linkEl = document.getElementById('externalLink');
+
+            // Determine the source name from URL
+            var sourceName = 'External Site';
+            if (post.url.indexOf('hashicorp.com') !== -1) {
+                sourceName = 'HashiCorp';
+            } else if (post.url.indexOf('synopsys.com') !== -1 || post.url.indexOf('blackduck') !== -1) {
+                sourceName = 'Black Duck (Synopsys)';
+            }
+
+            sourceEl.textContent = sourceName;
+            linkEl.href = post.url;
+            linkEl.textContent = 'View on ' + sourceName + ' ';
+
+            // Add icon
+            var icon = document.createElement('i');
+            icon.className = 'fa-solid fa-external-link';
+            icon.setAttribute('aria-hidden', 'true');
+            linkEl.appendChild(icon);
+
+            banner.style.display = 'flex';
+        }
+
+        // Show error
+        function showError(message) {
+            document.getElementById('postTitle').textContent = 'Error';
+            document.getElementById('postContent').innerHTML = '<p class="error-message">' + message + '. <a href="blog.html">Return to blog</a></p>';
+        }
+
+        // Copy link to clipboard
+        document.getElementById('copyLink').addEventListener('click', function() {
+            var btn = this;
+            navigator.clipboard.writeText(window.location.href).then(function() {
+                var originalText = btn.querySelector('span').textContent;
+                btn.querySelector('span').textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.querySelector('span').textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Accessibility: Font size controls
+        var currentFontSize = 100;
+        var postContent = document.getElementById('postContent');
+
+        document.getElementById('decreaseFont').addEventListener('click', function() {
+            if (currentFontSize > 80) {
+                currentFontSize -= 10;
+                postContent.style.fontSize = currentFontSize + '%';
+            }
+        });
+
+        document.getElementById('increaseFont').addEventListener('click', function() {
+            if (currentFontSize < 150) {
+                currentFontSize += 10;
+                postContent.style.fontSize = currentFontSize + '%';
+            }
+        });
+
+        // Accessibility: Dyslexia-friendly font
+        document.getElementById('toggleDyslexic').addEventListener('click', function() {
+            document.body.classList.toggle('dyslexic-font');
+            this.classList.toggle('active');
+        });
+
+        // Accessibility: High contrast mode
+        document.getElementById('toggleHighContrast').addEventListener('click', function() {
+            document.body.classList.toggle('high-contrast');
+            this.classList.toggle('active');
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadPost);
+    </script>
+</body>
+</html>
