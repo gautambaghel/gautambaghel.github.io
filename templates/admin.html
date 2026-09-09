@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Gautam Baghel</title>
+    <link rel="icon" href="/images/favicon.png">
+    <link rel="stylesheet" href="/assets/css/modern.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --navy: var(--color-bg);
+            --slate: var(--color-text-muted);
+            --light-slate: var(--color-text);
+            --lightest-slate: var(--color-text);
+            --green: var(--color-accent);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(100, 255, 218, 0.12), transparent 22%),
+                radial-gradient(circle at top right, rgba(136, 146, 176, 0.12), transparent 20%),
+                var(--navy);
+        }
+
+        .admin-shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-header h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-meta {
+            color: var(--slate);
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .admin-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            margin-bottom: 2rem;
+        }
+
+        .stat-card,
+        .panel {
+            background: rgba(17, 34, 64, 0.9);
+            border: 1px solid rgba(100, 255, 218, 0.12);
+            border-radius: 20px;
+            box-shadow: 0 22px 50px rgba(2, 12, 27, 0.28);
+        }
+
+        .stat-card {
+            padding: 1.4rem;
+        }
+
+        .stat-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: var(--slate);
+            font-size: 0.95rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--lightest-slate);
+        }
+
+        .panel-wrap {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1rem;
+        }
+
+        .panel {
+            padding: 1.4rem;
+            overflow: hidden;
+        }
+
+        .panel h2 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .panel.span-4 {
+            grid-column: span 4;
+        }
+
+        .panel.span-6 {
+            grid-column: span 6;
+        }
+
+        .panel.span-12 {
+            grid-column: span 12;
+        }
+
+        .table-shell {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 640px;
+        }
+
+        th,
+        td {
+            padding: 0.85rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(136, 146, 176, 0.14);
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--light-slate);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        td {
+            color: var(--slate);
+            font-size: 0.95rem;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.87rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-success {
+            background: rgba(100, 255, 218, 0.14);
+            color: var(--green);
+        }
+
+        .badge-danger {
+            background: rgba(255, 99, 132, 0.14);
+            color: #ff9db5;
+        }
+
+        .compact-list {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .compact-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid rgba(136, 146, 176, 0.14);
+        }
+
+        .compact-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .compact-key {
+            color: var(--light-slate);
+            overflow-wrap: anywhere;
+        }
+
+        .compact-value {
+            color: var(--green);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            color: var(--slate);
+        }
+
+        @media (max-width: 960px) {
+            .panel.span-4,
+            .panel.span-6,
+            .panel.span-12 {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .admin-header {
+                flex-direction: column;
+            }
+
+            .admin-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="admin-shell">
+        <header class="admin-header">
+            <div>
+                <p class="hero-greeting">Private Dashboard</p>
+                <h1>Site Analytics</h1>
+                <p class="admin-meta">Signed in as {{ admin_username }}. Review incoming traffic, referrers, and login attempts from one place.</p>
+            </div>
+            <div class="admin-actions">
+                <a href="/" class="btn btn-secondary">Public Site</a>
+                <form class="logout-form" method="post" action="/logout">
+                    <button class="btn btn-primary" type="submit">Log Out</button>
+                </form>
+            </div>
+        </header>
+
+        <section class="admin-grid" aria-label="Summary statistics">
+            <article class="stat-card">
+                <span class="stat-label">Total requests</span>
+                <strong class="stat-value">{{ stats.total_requests }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Requests in last 24h</span>
+                <strong class="stat-value">{{ stats.requests_last_24h }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Authenticated requests</span>
+                <strong class="stat-value">{{ stats.authenticated_requests }}</strong>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Failed login attempts</span>
+                <strong class="stat-value">{{ stats.failed_logins }}</strong>
+            </article>
+        </section>
+
+        <section class="panel-wrap">
+            <article class="panel span-4">
+                <h2>Top Paths</h2>
+                {% if top_paths %}
+                <div class="compact-list">
+                    {% for row in top_paths %}
+                    <div class="compact-item">
+                        <span class="compact-key mono">{{ row.path }}</span>
+                        <span class="compact-value">{{ row.hits }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state">No traffic has been recorded yet.</p>
+                {% endif %}
+            </article>
+
+            <article class="panel span-4">
+                <h2>Top Client IPs</h2>
+                {% if top_ips %}
+                <div class="compact-list">
+                    {% for row in top_ips %}
+                    <div class="compact-item">
+                        <span class="compact-key mono">{{ row.client_ip }}</span>
+                        <span class="compact-value">{{ row.hits }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state">No traffic has been recorded yet.</p>
+                {% endif %}
+            </article>
+
+            <article class="panel span-4">
+                <h2>Top Referrers</h2>
+                {% if top_referrers %}
+                <div class="compact-list">
+                    {% for row in top_referrers %}
+                    <div class="compact-item">
+                        <span class="compact-key">{{ row.source }}</span>
+                        <span class="compact-value">{{ row.hits }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state">No traffic has been recorded yet.</p>
+                {% endif %}
+            </article>
+
+            <article class="panel span-12">
+                <h2>Recent Requests</h2>
+                <div class="table-shell">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Method</th>
+                                <th>Path</th>
+                                <th>Status</th>
+                                <th>Client</th>
+                                <th>Referrer</th>
+                                <th>User Agent</th>
+                                <th>Auth</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_requests %}
+                                {% for row in recent_requests %}
+                                <tr>
+                                    <td class="mono">{{ row.timestamp }}</td>
+                                    <td>{{ row.method }}</td>
+                                    <td class="mono">{{ row.path }}</td>
+                                    <td>{{ row.status_code }}</td>
+                                    <td class="mono">{{ row.forwarded_for or row.ip_address or 'unknown' }}</td>
+                                    <td>{{ row.referer or 'direct / none' }}</td>
+                                    <td class="mono">{{ row.user_agent or 'unknown' }}</td>
+                                    <td>
+                                        {% if row.is_authenticated %}
+                                        <span class="badge badge-success"><i class="fa-solid fa-lock"></i> Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-danger"><i class="fa-solid fa-lock-open"></i> No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="empty-state">No requests logged yet.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="panel span-12">
+                <h2>Recent Login Attempts</h2>
+                <div class="table-shell">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Username</th>
+                                <th>Status</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_logins %}
+                                {% for row in recent_logins %}
+                                <tr>
+                                    <td class="mono">{{ row.timestamp }}</td>
+                                    <td>{{ row.username or 'unknown' }}</td>
+                                    <td>
+                                        {% if row.success %}
+                                        <span class="badge badge-success"><i class="fa-solid fa-check"></i> Success</span>
+                                        {% else %}
+                                        <span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="mono">{{ row.ip_address or 'unknown' }}</td>
+                                    <td class="mono">{{ row.user_agent or 'unknown' }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="empty-state">No login attempts recorded yet.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    </main>
+</body>
+</html>
