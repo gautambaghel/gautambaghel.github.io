@@ -29,6 +29,12 @@
             padding: 2rem 1.5rem 4rem;
         }
 
+        .admin-shell section {
+            padding: 0;
+            opacity: 1;
+            transform: none;
+        }
+
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -199,7 +205,114 @@
             white-space: nowrap;
         }
 
+        .compact-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .compact-subtext {
+            color: var(--slate);
+            font-size: 0.82rem;
+        }
+
         .empty-state {
+            color: var(--slate);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .panel-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .panel-header h2 {
+            margin-bottom: 0;
+        }
+
+        .panel-meta {
+            color: var(--slate);
+            font-size: 0.9rem;
+        }
+
+        .panel-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid rgba(100, 255, 218, 0.18);
+            background: rgba(10, 25, 47, 0.6);
+            color: var(--lightest-slate);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .panel-toggle:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-links {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            padding: 0.65rem 0.85rem;
+            border-radius: 12px;
+            border: 1px solid rgba(100, 255, 218, 0.18);
+            color: var(--lightest-slate);
+            text-decoration: none;
+            background: rgba(10, 25, 47, 0.6);
+        }
+
+        .pagination-link:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .pagination-link.disabled {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .pagination-link.active {
+            border-color: var(--green);
+            background: rgba(100, 255, 218, 0.18);
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .pagination-ellipsis {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            padding: 0.65rem 0.35rem;
             color: var(--slate);
         }
 
@@ -219,6 +332,12 @@
             .admin-actions {
                 width: 100%;
                 justify-content: space-between;
+            }
+
+            .panel-header,
+            .pagination {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -260,7 +379,10 @@
 
         <section class="panel-wrap">
             <article class="panel span-4">
-                <h2>Top Paths</h2>
+                <div class="panel-header">
+                    <h2>Top Paths</h2>
+                    <span class="panel-meta">{% if top_paths_pagination.total_pages > 1 %}Page {{ top_paths_pagination.page }} of {{ top_paths_pagination.total_pages }}{% else %}{{ top_paths_pagination.total_items }} total{% endif %}</span>
+                </div>
                 {% if top_paths %}
                 <div class="compact-list">
                     {% for row in top_paths %}
@@ -273,15 +395,40 @@
                 {% else %}
                 <p class="empty-state">No traffic has been recorded yet.</p>
                 {% endif %}
+                {% if top_paths_pagination.total_pages > 1 %}
+                <div class="pagination" aria-label="Top paths pagination">
+                    <span class="panel-meta">Showing up to {{ top_paths_pagination.per_page }} paths per page.</span>
+                    <div class="pagination-links">
+                        <a class="pagination-link{% if not top_paths_pagination.has_previous %} disabled{% endif %}" href="{{ admin_url(top_paths_page=top_paths_pagination.previous_page) }}" aria-label="Previous top paths page">&larr;</a>
+                        {% for item in top_paths_pagination.pages %}
+                        {% if item.kind == 'page' %}
+                        <a class="pagination-link{% if item.value == top_paths_pagination.page %} active{% endif %}" href="{{ admin_url(top_paths_page=item.value) }}">{{ item.value }}</a>
+                        {% else %}
+                        <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        {% endfor %}
+                        <a class="pagination-link{% if not top_paths_pagination.has_next %} disabled{% endif %}" href="{{ admin_url(top_paths_page=top_paths_pagination.next_page) }}" aria-label="Next top paths page">&rarr;</a>
+                    </div>
+                </div>
+                {% endif %}
             </article>
 
             <article class="panel span-4">
-                <h2>Top Client IPs</h2>
+                <div class="panel-header">
+                    <h2>Top Client IPs</h2>
+                    <div class="panel-header-actions">
+                        <span class="panel-meta">{% if top_ips_pagination.total_pages > 1 %}Page {{ top_ips_pagination.page }} of {{ top_ips_pagination.total_pages }}{% else %}{{ top_ips_pagination.total_items }} total{% endif %}</span>
+                        <a class="panel-toggle" href="{{ admin_url(top_ips_page=1, exclude_private_ips='0' if exclude_private_ips else '1') }}">{% if exclude_private_ips %}Show All IPs{% else %}Exclude Private/Local{% endif %}</a>
+                    </div>
+                </div>
                 {% if top_ips %}
                 <div class="compact-list">
                     {% for row in top_ips %}
                     <div class="compact-item">
-                        <span class="compact-key mono">{{ row.client_ip }}</span>
+                        <span class="compact-text">
+                            <span class="compact-key mono">{{ row.client_ip }}</span>
+                            <span class="compact-subtext">{{ row.label }}</span>
+                        </span>
                         <span class="compact-value">{{ row.hits }}</span>
                     </div>
                     {% endfor %}
@@ -289,10 +436,29 @@
                 {% else %}
                 <p class="empty-state">No traffic has been recorded yet.</p>
                 {% endif %}
+                {% if top_ips_pagination.total_pages > 1 %}
+                <div class="pagination" aria-label="Top client IPs pagination">
+                    <span class="panel-meta">Showing up to {{ top_ips_pagination.per_page }} IPs per page.</span>
+                    <div class="pagination-links">
+                        <a class="pagination-link{% if not top_ips_pagination.has_previous %} disabled{% endif %}" href="{{ admin_url(top_ips_page=top_ips_pagination.previous_page) }}" aria-label="Previous top client IPs page">&larr;</a>
+                        {% for item in top_ips_pagination.pages %}
+                        {% if item.kind == 'page' %}
+                        <a class="pagination-link{% if item.value == top_ips_pagination.page %} active{% endif %}" href="{{ admin_url(top_ips_page=item.value) }}">{{ item.value }}</a>
+                        {% else %}
+                        <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        {% endfor %}
+                        <a class="pagination-link{% if not top_ips_pagination.has_next %} disabled{% endif %}" href="{{ admin_url(top_ips_page=top_ips_pagination.next_page) }}" aria-label="Next top client IPs page">&rarr;</a>
+                    </div>
+                </div>
+                {% endif %}
             </article>
 
             <article class="panel span-4">
-                <h2>Top Referrers</h2>
+                <div class="panel-header">
+                    <h2>Top Referrers</h2>
+                    <span class="panel-meta">{% if top_referrers_pagination.total_pages > 1 %}Page {{ top_referrers_pagination.page }} of {{ top_referrers_pagination.total_pages }}{% else %}{{ top_referrers_pagination.total_items }} total{% endif %}</span>
+                </div>
                 {% if top_referrers %}
                 <div class="compact-list">
                     {% for row in top_referrers %}
@@ -305,10 +471,29 @@
                 {% else %}
                 <p class="empty-state">No traffic has been recorded yet.</p>
                 {% endif %}
+                {% if top_referrers_pagination.total_pages > 1 %}
+                <div class="pagination" aria-label="Top referrers pagination">
+                    <span class="panel-meta">Showing up to {{ top_referrers_pagination.per_page }} referrers per page.</span>
+                    <div class="pagination-links">
+                        <a class="pagination-link{% if not top_referrers_pagination.has_previous %} disabled{% endif %}" href="{{ admin_url(top_referrers_page=top_referrers_pagination.previous_page) }}" aria-label="Previous top referrers page">&larr;</a>
+                        {% for item in top_referrers_pagination.pages %}
+                        {% if item.kind == 'page' %}
+                        <a class="pagination-link{% if item.value == top_referrers_pagination.page %} active{% endif %}" href="{{ admin_url(top_referrers_page=item.value) }}">{{ item.value }}</a>
+                        {% else %}
+                        <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        {% endfor %}
+                        <a class="pagination-link{% if not top_referrers_pagination.has_next %} disabled{% endif %}" href="{{ admin_url(top_referrers_page=top_referrers_pagination.next_page) }}" aria-label="Next top referrers page">&rarr;</a>
+                    </div>
+                </div>
+                {% endif %}
             </article>
 
             <article class="panel span-12">
-                <h2>Recent Requests</h2>
+                <div class="panel-header">
+                    <h2>Recent Requests</h2>
+                    <span class="panel-meta">Page {{ recent_requests_pagination.page }} of {{ recent_requests_pagination.total_pages }} · {{ recent_requests_pagination.total_items }} total</span>
+                </div>
                 <div class="table-shell">
                     <table>
                         <thead>
@@ -351,10 +536,27 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination" aria-label="Recent requests pagination">
+                    <span class="panel-meta">Showing up to {{ recent_requests_pagination.per_page }} requests per page.</span>
+                    <div class="pagination-links">
+                        <a class="pagination-link{% if not recent_requests_pagination.has_previous %} disabled{% endif %}" href="{{ url_for('admin', requests_page=recent_requests_pagination.previous_page, logins_page=recent_logins_pagination.page) }}" aria-label="Previous requests page">&larr;</a>
+                        {% for item in recent_requests_pagination.pages %}
+                        {% if item.kind == 'page' %}
+                        <a class="pagination-link{% if item.value == recent_requests_pagination.page %} active{% endif %}" href="{{ url_for('admin', requests_page=item.value, logins_page=recent_logins_pagination.page) }}">{{ item.value }}</a>
+                        {% else %}
+                        <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        {% endfor %}
+                        <a class="pagination-link{% if not recent_requests_pagination.has_next %} disabled{% endif %}" href="{{ url_for('admin', requests_page=recent_requests_pagination.next_page, logins_page=recent_logins_pagination.page) }}" aria-label="Next requests page">&rarr;</a>
+                    </div>
+                </div>
             </article>
 
             <article class="panel span-12">
-                <h2>Recent Login Attempts</h2>
+                <div class="panel-header">
+                    <h2>Recent Login Attempts</h2>
+                    <span class="panel-meta">Page {{ recent_logins_pagination.page }} of {{ recent_logins_pagination.total_pages }} · {{ recent_logins_pagination.total_items }} total</span>
+                </div>
                 <div class="table-shell">
                     <table>
                         <thead>
@@ -390,6 +592,20 @@
                             {% endif %}
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination" aria-label="Recent login attempts pagination">
+                    <span class="panel-meta">Showing up to {{ recent_logins_pagination.per_page }} login attempts per page.</span>
+                    <div class="pagination-links">
+                        <a class="pagination-link{% if not recent_logins_pagination.has_previous %} disabled{% endif %}" href="{{ url_for('admin', requests_page=recent_requests_pagination.page, logins_page=recent_logins_pagination.previous_page) }}" aria-label="Previous login page">&larr;</a>
+                        {% for item in recent_logins_pagination.pages %}
+                        {% if item.kind == 'page' %}
+                        <a class="pagination-link{% if item.value == recent_logins_pagination.page %} active{% endif %}" href="{{ url_for('admin', requests_page=recent_requests_pagination.page, logins_page=item.value) }}">{{ item.value }}</a>
+                        {% else %}
+                        <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        {% endfor %}
+                        <a class="pagination-link{% if not recent_logins_pagination.has_next %} disabled{% endif %}" href="{{ url_for('admin', requests_page=recent_requests_pagination.page, logins_page=recent_logins_pagination.next_page) }}" aria-label="Next login page">&rarr;</a>
+                    </div>
                 </div>
             </article>
         </section>
