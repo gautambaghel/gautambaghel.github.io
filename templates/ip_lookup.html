@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Lookup - Gautam Baghel</title>
+    <link rel="icon" href="/images/favicon.png">
+    <link rel="stylesheet" href="/assets/css/modern.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --navy: var(--color-bg);
+            --slate: var(--color-text-muted);
+            --green: var(--color-accent);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(100, 255, 218, 0.12), transparent 22%),
+                radial-gradient(circle at top right, rgba(136, 146, 176, 0.12), transparent 20%),
+                var(--navy);
+        }
+
+        .admin-shell {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .admin-shell section { padding: 0; opacity: 1; transform: none; }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-header h1 { margin-bottom: 0.5rem; }
+        .admin-meta { color: var(--slate); }
+        .admin-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+        .panel {
+            background: rgba(17, 34, 64, 0.6);
+            border: 1px solid rgba(136, 146, 176, 0.18);
+            border-radius: 14px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel h2 {
+            font-size: 1.15rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .lookup-form {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .lookup-form input[type="text"] {
+            flex: 1;
+            min-width: 220px;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(136, 146, 176, 0.35);
+            background: rgba(10, 25, 47, 0.7);
+            color: var(--color-text);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .lookup-form input[type="text"]:focus {
+            outline: none;
+            border-color: var(--green);
+        }
+
+        .flags { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.5rem; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-datacenter { background: rgba(255, 159, 64, 0.16); color: #ffc584; }
+        .badge-proxy { background: rgba(255, 99, 132, 0.14); color: #ff9db5; }
+        .badge-mobile { background: rgba(100, 181, 246, 0.16); color: #90caf9; }
+        .badge-residential { background: rgba(100, 255, 218, 0.14); color: var(--green); }
+        .badge-private { background: rgba(136, 146, 176, 0.2); color: var(--color-text); }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem 2rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(136, 146, 176, 0.12);
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--slate);
+        }
+
+        .detail-value { font-size: 1rem; color: var(--color-text); word-break: break-word; }
+
+        .notes { margin-top: 1rem; color: var(--slate); font-size: 0.9rem; }
+        .notes li { margin-bottom: 0.35rem; }
+        .sources { margin-top: 1.25rem; font-size: 0.8rem; color: var(--slate); }
+
+        @media (max-width: 600px) {
+            .admin-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="admin-shell">
+        <header class="admin-header">
+            <div>
+                <p class="hero-greeting">Private Dashboard</p>
+                <h1>IP Lookup</h1>
+                <p class="admin-meta">Inspect any IP address &mdash; datacenter/hosting, proxy, geo, and ASN details. Works for private and public IPs.</p>
+            </div>
+            <div class="admin-actions">
+                <a href="/admin" class="btn btn-secondary">Back to Analytics</a>
+            </div>
+        </header>
+
+        <section>
+            <div class="panel">
+                <form class="lookup-form" method="get" action="/admin/ip-lookup">
+                    <input type="text" name="ip" value="{{ query }}" placeholder="e.g. 35.198.210.199" autofocus required>
+                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Look Up</button>
+                </form>
+            </div>
+
+            {% if details %}
+            <div class="panel">
+                <h2><span class="mono">{{ details.ip_address }}</span></h2>
+
+                <div class="flags">
+                    {% if details.ip_type in ['private', 'loopback'] %}
+                        <span class="badge badge-private"><i class="fa-solid fa-house-laptop"></i> {{ 'Localhost' if details.ip_type == 'loopback' else 'Private Network' }}</span>
+                    {% else %}
+                        {% if details.is_datacenter %}
+                        <span class="badge badge-datacenter"><i class="fa-solid fa-server"></i> Datacenter / Hosting</span>
+                        {% else %}
+                        <span class="badge badge-residential"><i class="fa-solid fa-wifi"></i> Residential / ISP</span>
+                        {% endif %}
+                        {% if details.is_proxy %}
+                        <span class="badge badge-proxy"><i class="fa-solid fa-mask"></i> Proxy / VPN</span>
+                        {% endif %}
+                        {% if details.is_mobile %}
+                        <span class="badge badge-mobile"><i class="fa-solid fa-mobile-screen"></i> Mobile</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Address Type</span>
+                        <span class="detail-value">{{ details.ip_type | capitalize }}</span>
+                    </div>
+                    {% if details.country %}
+                    <div class="detail-item">
+                        <span class="detail-label">Location</span>
+                        <span class="detail-value">
+                            {{ [details.city, details.region, details.country] | select | join(', ') }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if details.isp %}
+                    <div class="detail-item">
+                        <span class="detail-label">ISP</span>
+                        <span class="detail-value">{{ details.isp }}</span>
+                    </div>
+                    {% endif %}
+                    {% if details.org %}
+                    <div class="detail-item">
+                        <span class="detail-label">Organization</span>
+                        <span class="detail-value">{{ details.org }}</span>
+                    </div>
+                    {% endif %}
+                    {% if details.asn %}
+                    <div class="detail-item">
+                        <span class="detail-label">ASN</span>
+                        <span class="detail-value mono">AS{{ details.asn }}{% if details.as_name %} &middot; {{ details.as_name }}{% endif %}</span>
+                    </div>
+                    {% endif %}
+                    {% if details.reverse %}
+                    <div class="detail-item">
+                        <span class="detail-label">Reverse DNS</span>
+                        <span class="detail-value mono">{{ details.reverse }}</span>
+                    </div>
+                    {% endif %}
+                    {% if details.timezone %}
+                    <div class="detail-item">
+                        <span class="detail-label">Timezone</span>
+                        <span class="detail-value">{{ details.timezone }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if details.notes %}
+                <ul class="notes">
+                    {% for note in details.notes %}
+                    <li><i class="fa-solid fa-circle-info"></i> {{ note }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if details.sources %}
+                <p class="sources">Sources: {{ details.sources | join(', ') }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

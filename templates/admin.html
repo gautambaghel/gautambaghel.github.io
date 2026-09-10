@@ -262,6 +262,64 @@
             color: var(--green);
         }
 
+        .sort-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .sort-label {
+            color: var(--slate);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-right: 0.15rem;
+        }
+
+        .sort-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(136, 146, 176, 0.22);
+            background: rgba(10, 25, 47, 0.5);
+            color: var(--slate);
+            text-decoration: none;
+            font-size: 0.78rem;
+        }
+
+        .sort-link:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .sort-link.active {
+            border-color: var(--green);
+            background: rgba(100, 255, 218, 0.12);
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .compact-meta {
+            color: var(--slate);
+            font-size: 0.75rem;
+        }
+
+        .ip-link {
+            color: var(--green);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(100, 255, 218, 0.4);
+            width: fit-content;
+        }
+
+        .ip-link:hover {
+            border-bottom-color: var(--green);
+            filter: brightness(1.15);
+        }
+
         .pagination {
             display: flex;
             justify-content: space-between;
@@ -419,15 +477,28 @@
                     <div class="panel-header-actions">
                         <span class="panel-meta">{% if top_ips_pagination.total_pages > 1 %}Page {{ top_ips_pagination.page }} of {{ top_ips_pagination.total_pages }}{% else %}{{ top_ips_pagination.total_items }} total{% endif %}</span>
                         <a class="panel-toggle" href="{{ admin_url(top_ips_page=1, exclude_private_ips='0' if exclude_private_ips else '1') }}">{% if exclude_private_ips %}Show All IPs{% else %}Exclude Private/Local{% endif %}</a>
+                        <a class="panel-toggle" href="{{ admin_url(top_ips_page=1, residential_only='0' if residential_only else '1') }}">{% if residential_only %}Show All Types{% else %}Residential/Private Only{% endif %}</a>
                     </div>
+                </div>
+                <div class="sort-controls" aria-label="Sort top client IPs">
+                    <span class="sort-label">Sort</span>
+                    <a class="sort-link{% if top_ips_sort == 'hits_desc' %} active{% endif %}" href="{{ admin_url(top_ips_page=1, top_ips_sort='hits_desc') }}"><i class="fa-solid fa-arrow-down-9-1"></i> Most hits</a>
+                    <a class="sort-link{% if top_ips_sort == 'hits_asc' %} active{% endif %}" href="{{ admin_url(top_ips_page=1, top_ips_sort='hits_asc') }}"><i class="fa-solid fa-arrow-down-1-9"></i> Fewest hits</a>
+                    <a class="sort-link{% if top_ips_sort == 'time_desc' %} active{% endif %}" href="{{ admin_url(top_ips_page=1, top_ips_sort='time_desc') }}"><i class="fa-solid fa-clock"></i> Newest</a>
+                    <a class="sort-link{% if top_ips_sort == 'time_asc' %} active{% endif %}" href="{{ admin_url(top_ips_page=1, top_ips_sort='time_asc') }}"><i class="fa-regular fa-clock"></i> Oldest</a>
                 </div>
                 {% if top_ips %}
                 <div class="compact-list">
                     {% for row in top_ips %}
                     <div class="compact-item">
                         <span class="compact-text">
+                            {% if row.client_ip and row.client_ip != 'unknown' %}
+                            <a class="compact-key mono ip-link" href="/admin/ip-lookup?ip={{ row.client_ip | urlencode }}" title="Look up {{ row.client_ip }}">{{ row.client_ip }}</a>
+                            {% else %}
                             <span class="compact-key mono">{{ row.client_ip }}</span>
+                            {% endif %}
                             <span class="compact-subtext">{{ row.label }}</span>
+                            {% if row.last_seen %}<span class="compact-meta">Last seen {{ row.last_seen | replace('T', ' ') }}</span>{% endif %}
                         </span>
                         <span class="compact-value">{{ row.hits }}</span>
                     </div>
@@ -459,11 +530,21 @@
                     <h2>Top Referrers</h2>
                     <span class="panel-meta">{% if top_referrers_pagination.total_pages > 1 %}Page {{ top_referrers_pagination.page }} of {{ top_referrers_pagination.total_pages }}{% else %}{{ top_referrers_pagination.total_items }} total{% endif %}</span>
                 </div>
+                <div class="sort-controls" aria-label="Sort top referrers">
+                    <span class="sort-label">Sort</span>
+                    <a class="sort-link{% if top_referrers_sort == 'hits_desc' %} active{% endif %}" href="{{ admin_url(top_referrers_page=1, top_referrers_sort='hits_desc') }}"><i class="fa-solid fa-arrow-down-9-1"></i> Most hits</a>
+                    <a class="sort-link{% if top_referrers_sort == 'hits_asc' %} active{% endif %}" href="{{ admin_url(top_referrers_page=1, top_referrers_sort='hits_asc') }}"><i class="fa-solid fa-arrow-down-1-9"></i> Fewest hits</a>
+                    <a class="sort-link{% if top_referrers_sort == 'time_desc' %} active{% endif %}" href="{{ admin_url(top_referrers_page=1, top_referrers_sort='time_desc') }}"><i class="fa-solid fa-clock"></i> Newest</a>
+                    <a class="sort-link{% if top_referrers_sort == 'time_asc' %} active{% endif %}" href="{{ admin_url(top_referrers_page=1, top_referrers_sort='time_asc') }}"><i class="fa-regular fa-clock"></i> Oldest</a>
+                </div>
                 {% if top_referrers %}
                 <div class="compact-list">
                     {% for row in top_referrers %}
                     <div class="compact-item">
-                        <span class="compact-key">{{ row.source }}</span>
+                        <span class="compact-text">
+                            <span class="compact-key">{{ row.source }}</span>
+                            {% if row.last_seen %}<span class="compact-meta">Last seen {{ row.last_seen | replace('T', ' ') }}</span>{% endif %}
+                        </span>
                         <span class="compact-value">{{ row.hits }}</span>
                     </div>
                     {% endfor %}

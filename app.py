@@ -62,6 +62,10 @@ def create_app():
                 "requests_page": get_page_number(request.args.get("requests_page")),
                 "logins_page": get_page_number(request.args.get("logins_page")),
                 "exclude_private_ips": "1" if get_toggle_value(request.args.get("exclude_private_ips")) else "0",
+                "exclude_bots": "1" if get_toggle_value(request.args.get("exclude_bots")) else "0",
+                "residential_only": "1" if get_toggle_value(request.args.get("residential_only")) else "0",
+                "top_ips_sort": get_sort_value(request.args.get("top_ips_sort")),
+                "top_referrers_sort": get_sort_value(request.args.get("top_referrers_sort")),
             }
             params.update(updates)
             return url_for("admin", **params)
@@ -115,27 +119,42 @@ def create_app():
         requests_page = get_page_number(request.args.get("requests_page"))
         logins_page = get_page_number(request.args.get("logins_page"))
         exclude_private_ips = get_toggle_value(request.args.get("exclude_private_ips"))
-        top_paths = get_top_paths(page=top_paths_page, per_page=SUMMARY_PAGE_SIZE)
-        top_ips = get_top_ips(page=top_ips_page, per_page=SUMMARY_PAGE_SIZE, exclude_private_ips=exclude_private_ips)
-        top_referrers = get_top_referrers(page=top_referrers_page, per_page=SUMMARY_PAGE_SIZE)
+        exclude_bots = get_toggle_value(request.args.get("exclude_bots"))
+        residential_only = get_toggle_value(request.args.get("residential_only"))
+        top_ips_sort = get_sort_value(request.args.get("top_ips_sort"))
+        top_referrers_sort = get_sort_value(request.args.get("top_referrers_sort"))
+        top_paths = get_top_paths(page=top_paths_page, per_page=SUMMARY_PAGE_SIZE, exclude_bots=exclude_bots)
+        top_ips = get_top_ips(page=top_ips_page, per_page=SUMMARY_PAGE_SIZE, exclude_private_ips=exclude_private_ips, exclude_bots=exclude_bots, sort=top_ips_sort, residential_only=residential_only)
+        top_referrers = get_top_referrers(page=top_referrers_page, per_page=SUMMARY_PAGE_SIZE, exclude_bots=exclude_bots, sort=top_referrers_sort)
         recent_requests = get_recent_requests(page=requests_page, per_page=REQUESTS_PAGE_SIZE)
         recent_logins = get_recent_login_attempts(page=logins_page, per_page=LOGINS_PAGE_SIZE)
 
         return render_template(
             "admin.html",
-            stats=get_dashboard_stats(),
+            stats=get_dashboard_stats(exclude_bots=exclude_bots),
             top_paths=top_paths["rows"],
             top_paths_pagination=top_paths["pagination"],
             top_ips=top_ips["rows"],
             top_ips_pagination=top_ips["pagination"],
+            top_ips_sort=top_ips["sort"],
             exclude_private_ips=exclude_private_ips,
+            exclude_bots=exclude_bots,
+            residential_only=residential_only,
             top_referrers=top_referrers["rows"],
             top_referrers_pagination=top_referrers["pagination"],
+            top_referrers_sort=top_referrers["sort"],
             recent_requests=recent_requests["rows"],
             recent_requests_pagination=recent_requests["pagination"],
             recent_logins=recent_logins["rows"],
             recent_logins_pagination=recent_logins["pagination"],
         )
+
+    @app.route("/admin/ip-lookup", methods=["GET"])
+    @login_required
+    def ip_lookup():
+        query = (request.args.get("ip") or "").strip()
+        details = lookup_ip_details(query) if query else None
+        return render_template("ip_lookup.html", query=query, details=details)
 
     @app.route("/health")
     def health():
@@ -202,11 +221,20 @@ def init_db():
             label TEXT NOT NULL,
             country TEXT,
             region TEXT,
-            looked_up_at TEXT NOT NULL
+            looked_up_at TEXT NOT NULL,
+            is_datacenter INTEGER
         );
         """
     )
     db.commit()
+    ensure_ip_locations_columns(db)
+
+
+def ensure_ip_locations_columns(db):
+    existing = {row["name"] for row in db.execute("PRAGMA table_info(ip_locations)").fetchall()}
+    if "is_datacenter" not in existing:
+        db.execute("ALTER TABLE ip_locations ADD COLUMN is_datacenter INTEGER")
+        db.commit()
 
 
 def bootstrap_admin_user():
@@ -306,13 +334,20 @@ def record_traffic(status_code):
     db.commit()
 
 
-def get_dashboard_stats():
+def get_dashboard_stats(exclude_bots=False):
     db = get_db()
     since_24h = iso_timestamp(datetime.now(timezone.utc) - timedelta(hours=24))
 
-    total_requests = scalar_query("SELECT COUNT(*) FROM traffic_logs")
-    requests_last_24h = scalar_query("SELECT COUNT(*) FROM traffic_logs WHERE timestamp >= ?", (since_24h,))
-    authenticated_requests = scalar_query("SELECT COUNT(*) FROM traffic_logs WHERE is_authenticated = 1")
+    bots_where = bot_filter_clause(exclude_bots, use_where=True)
+    bots_and = bot_filter_clause(exclude_bots, use_where=False)
+
+    total_requests = scalar_query(f"SELECT COUNT(*) FROM traffic_logs{bots_where}")
+    requests_last_24h = scalar_query(
+        f"SELECT COUNT(*) FROM traffic_logs WHERE timestamp >= ?{bots_and}", (since_24h,)
+    )
+    authenticated_requests = scalar_query(
+        f"SELECT COUNT(*) FROM traffic_logs WHERE is_authenticated = 1{bots_and}"
+    )
     failed_logins = scalar_query("SELECT COUNT(*) FROM login_audit WHERE success = 0")
 
     return {
@@ -320,35 +355,68 @@ def get_dashboard_stats():
         "requests_last_24h": requests_last_24h,
         "authenticated_requests": authenticated_requests,
         "failed_logins": failed_logins,
-        "first_seen": db.execute("SELECT MIN(timestamp) AS value FROM traffic_logs").fetchone()["value"],
-        "last_seen": db.execute("SELECT MAX(timestamp) AS value FROM traffic_logs").fetchone()["value"],
+        "first_seen": db.execute(
+            f"SELECT MIN(timestamp) AS value FROM traffic_logs{bots_where}"
+        ).fetchone()["value"],
+        "last_seen": db.execute(
+            f"SELECT MAX(timestamp) AS value FROM traffic_logs{bots_where}"
+        ).fetchone()["value"],
     }
 
 
-def get_top_paths(page=1, per_page=8):
+# Allowed sort values for the Top IPs / Top Referrers panels. Each maps to a
+# (column, direction) pair used to build a safe ORDER BY clause.
+SORT_OPTIONS = {
+    "hits_desc": ("hits", "DESC"),
+    "hits_asc": ("hits", "ASC"),
+    "time_desc": ("last_seen", "DESC"),
+    "time_asc": ("last_seen", "ASC"),
+}
+DEFAULT_SORT = "hits_desc"
+
+
+def get_sort_value(raw_value):
+    value = str(raw_value or "").lower().strip()
+    return value if value in SORT_OPTIONS else DEFAULT_SORT
+
+
+def sort_order_clause(sort_value, tiebreaker):
+    column, direction = SORT_OPTIONS[get_sort_value(sort_value)]
+    return f"ORDER BY {column} {direction}, {tiebreaker} ASC"
+
+
+def get_top_paths(page=1, per_page=8, exclude_bots=False):
     offset = (page - 1) * per_page
+    bots_and = bot_filter_clause(exclude_bots, use_where=False)
     rows = get_db().execute(
-        """
+        f"""
         SELECT path, COUNT(*) AS hits
         FROM traffic_logs
-        WHERE path != '/health'
+        WHERE path != '/health'{bots_and}
         GROUP BY path
         ORDER BY hits DESC, path ASC
         LIMIT ? OFFSET ?
         """,
         (per_page, offset),
     ).fetchall()
-    total = scalar_query("SELECT COUNT(DISTINCT path) FROM traffic_logs WHERE path != '/health'")
+    total = scalar_query(
+        f"SELECT COUNT(DISTINCT path) FROM traffic_logs WHERE path != '/health'{bots_and}"
+    )
     return {"rows": rows, "pagination": build_pagination(page, per_page, total, "top_paths_page")}
 
 
-def get_top_ips(page=1, per_page=8, exclude_private_ips=False):
+def get_top_ips(page=1, per_page=8, exclude_private_ips=False, exclude_bots=False, sort=DEFAULT_SORT, residential_only=False):
+    bots_where = bot_filter_clause(exclude_bots, use_where=True)
+    order_clause = sort_order_clause(sort, tiebreaker="client_ip")
     rows = get_db().execute(
-        """
-        SELECT COALESCE(NULLIF(forwarded_for, ''), ip_address, 'unknown') AS client_ip, COUNT(*) AS hits
-        FROM traffic_logs
+        f"""
+        SELECT
+            COALESCE(NULLIF(forwarded_for, ''), ip_address, 'unknown') AS client_ip,
+            COUNT(*) AS hits,
+            MAX(timestamp) AS last_seen
+        FROM traffic_logs{bots_where}
         GROUP BY client_ip
-        ORDER BY hits DESC, client_ip ASC
+        {order_clause}
         """,
     ).fetchall()
 
@@ -358,11 +426,14 @@ def get_top_ips(page=1, per_page=8, exclude_private_ips=False):
         ip_type = classify_client_ip(client_ip)
         if exclude_private_ips and ip_type in {"loopback", "private"}:
             continue
+        if residential_only and ip_type == "public" and is_datacenter_ip(client_ip):
+            continue
         location = get_ip_location(client_ip)
         enriched_rows.append(
             {
                 "client_ip": client_ip,
                 "hits": row["hits"],
+                "last_seen": row["last_seen"],
                 "label": location["label"],
                 "country": location["country"],
                 "region": location["region"],
@@ -373,25 +444,32 @@ def get_top_ips(page=1, per_page=8, exclude_private_ips=False):
     offset = (page - 1) * per_page
     paged_rows = enriched_rows[offset: offset + per_page]
 
-    return {"rows": paged_rows, "pagination": build_pagination(page, per_page, total, "top_ips_page")}
+    pagination = build_pagination(page, per_page, total, "top_ips_page")
+    return {"rows": paged_rows, "pagination": pagination, "sort": get_sort_value(sort)}
 
 
-def get_top_referrers(page=1, per_page=8):
+def get_top_referrers(page=1, per_page=8, exclude_bots=False, sort=DEFAULT_SORT):
     offset = (page - 1) * per_page
+    bots_where = bot_filter_clause(exclude_bots, use_where=True)
+    order_clause = sort_order_clause(sort, tiebreaker="source")
     rows = get_db().execute(
-        """
-        SELECT CASE WHEN referer = '' THEN 'direct / none' ELSE referer END AS source, COUNT(*) AS hits
-        FROM traffic_logs
+        f"""
+        SELECT
+            CASE WHEN referer = '' THEN 'direct / none' ELSE referer END AS source,
+            COUNT(*) AS hits,
+            MAX(timestamp) AS last_seen
+        FROM traffic_logs{bots_where}
         GROUP BY source
-        ORDER BY hits DESC, source ASC
+        {order_clause}
         LIMIT ? OFFSET ?
         """,
         (per_page, offset),
     ).fetchall()
     total = scalar_query(
-        "SELECT COUNT(*) FROM (SELECT CASE WHEN referer = '' THEN 'direct / none' ELSE referer END AS source FROM traffic_logs GROUP BY source)"
+        f"SELECT COUNT(*) FROM (SELECT CASE WHEN referer = '' THEN 'direct / none' ELSE referer END AS source FROM traffic_logs{bots_where} GROUP BY source)"
     )
-    return {"rows": rows, "pagination": build_pagination(page, per_page, total, "top_referrers_page")}
+    pagination = build_pagination(page, per_page, total, "top_referrers_page")
+    return {"rows": rows, "pagination": pagination, "sort": get_sort_value(sort)}
 
 
 def get_recent_requests(page=1, per_page=25):
@@ -502,6 +580,73 @@ def classify_client_ip(ip_address):
     return "public"
 
 
+# Substrings that identify automated clients. Matched case-insensitively against
+# the User-Agent header. Covers self-identifying crawlers, SEO/monitoring bots,
+# headless browsers, and generic HTTP libraries / CLI tools.
+BOT_USER_AGENT_MARKERS = (
+    "bot",
+    "crawl",
+    "spider",
+    "slurp",
+    "headless",
+    "python-urllib",
+    "python-requests",
+    "aiohttp",
+    "httpx",
+    "curl",
+    "wget",
+    "go-http-client",
+    "java/",
+    "okhttp",
+    "libwww",
+    "scrapy",
+    "phantomjs",
+    "puppeteer",
+    "playwright",
+    "facebookexternalhit",
+    "embedly",
+    "preview",
+    "monitor",
+    "uptime",
+    "pingdom",
+    "lighthouse",
+    "semrush",
+    "ahrefs",
+    "mj12",
+    "dotbot",
+    "petalbot",
+    "gptbot",
+    "checker",
+    "scan",
+)
+
+
+def is_bot_user_agent(user_agent):
+    """Return True when the User-Agent looks like a crawler, scraper, or tool."""
+    normalized = (user_agent or "").strip().lower()
+    if not normalized:
+        # A missing UA is a strong signal of an automated/scripted client.
+        return True
+    return any(marker in normalized for marker in BOT_USER_AGENT_MARKERS)
+
+
+# SQL fragment used to exclude bot traffic directly inside aggregate queries.
+# Kept in sync with BOT_USER_AGENT_MARKERS so both paths agree.
+BOT_UA_SQL_CONDITION = (
+    "(COALESCE(user_agent, '') = '' OR "
+    + " OR ".join(f"LOWER(user_agent) LIKE '%{marker}%'" for marker in BOT_USER_AGENT_MARKERS)
+    + ")"
+)
+
+
+def bot_filter_clause(exclude_bots, use_where=True):
+    """Return a SQL clause that removes bot traffic when exclude_bots is set."""
+    if not exclude_bots:
+        return ""
+    keyword = "WHERE" if use_where else "AND"
+    return f" {keyword} NOT {BOT_UA_SQL_CONDITION}"
+
+
 def get_ip_location(ip_address):
     ip_type = classify_client_ip(ip_address)
     if ip_type in {"unknown", "invalid"}:
@@ -556,6 +701,130 @@ def fetch_ip_location(ip_address):
     }
 
 
+def lookup_ip_details(raw_ip):
+    """Return a full detail report for a single IP for the admin lookup page.
+
+    Works for private/loopback/invalid IPs (handled locally) and public IPs
+    (enriched via ipwho.is for geo and ip-api.com for hosting/proxy flags).
+    """
+    ip_address = normalize_client_ip(raw_ip)
+    ip_type = classify_client_ip(ip_address)
+
+    details = {
+        "query": raw_ip,
+        "ip_address": ip_address,
+        "ip_type": ip_type,
+        "is_datacenter": False,
+        "is_proxy": False,
+        "is_mobile": False,
+        "country": None,
+        "region": None,
+        "city": None,
+        "isp": None,
+        "org": None,
+        "asn": None,
+        "as_name": None,
+        "timezone": None,
+        "reverse": None,
+        "sources": [],
+        "notes": [],
+    }
+
+    if ip_type == "invalid":
+        details["notes"].append("Not a valid IPv4/IPv6 address.")
+        return details
+    if ip_type == "unknown":
+        details["notes"].append("No IP address was provided.")
+        return details
+    if ip_type == "loopback":
+        details["notes"].append("Loopback address (localhost). No external lookup performed.")
+        return details
+    if ip_type == "private":
+        details["notes"].append("Private/internal network address (RFC 1918). No external lookup performed.")
+        return details
+
+    # Public IP: enrich from external sources.
+    whois_data = fetch_ipwhois_details(ip_address)
+    if whois_data:
+        details.update({k: v for k, v in whois_data.items() if v is not None})
+        details["sources"].append("ipwho.is")
+
+    hosting_data = fetch_ipapi_details(ip_address)
+    if hosting_data:
+        for key in ("country", "region", "city", "isp", "org", "asn", "as_name", "reverse"):
+            if not details.get(key) and hosting_data.get(key) is not None:
+                details[key] = hosting_data[key]
+        if hosting_data.get("is_datacenter") is not None:
+            details["is_datacenter"] = hosting_data["is_datacenter"]
+        if hosting_data.get("is_proxy") is not None:
+            details["is_proxy"] = hosting_data["is_proxy"]
+        if hosting_data.get("is_mobile") is not None:
+            details["is_mobile"] = hosting_data["is_mobile"]
+        details["sources"].append("ip-api.com")
+
+    if not details["sources"]:
+        details["notes"].append("External lookups were unavailable. Try again shortly (rate limits may apply).")
+
+    return details
+
+
+def fetch_ipwhois_details(ip_address):
+    try:
+        with urllib_request.urlopen(f"https://ipwho.is/{ip_address}", timeout=4) as response:
+            payload = json_loads(response.read().decode("utf-8"))
+    except (urllib_error.URLError, TimeoutError, ValueError):
+        return None
+
+    if not payload.get("success"):
+        return None
+
+    connection = payload.get("connection") or {}
+    return {
+        "country": payload.get("country") or None,
+        "region": payload.get("region") or None,
+        "city": payload.get("city") or None,
+        "timezone": (payload.get("timezone") or {}).get("id") if isinstance(payload.get("timezone"), dict) else None,
+        "isp": connection.get("isp") or None,
+        "org": connection.get("org") or None,
+        "asn": connection.get("asn") or None,
+        "as_name": None,
+    }
+
+
+def fetch_ipapi_details(ip_address):
+    # ip-api.com free tier is HTTP-only, no key, ~45 req/min. Returns a direct
+    # "hosting" boolean that identifies datacenter/cloud IPs.
+    fields = "status,message,country,regionName,city,isp,org,as,asname,reverse,proxy,hosting,mobile,query"
+    url = f"http://ip-api.com/json/{ip_address}?fields={fields}"
+    try:
+        with urllib_request.urlopen(url, timeout=4) as response:
+            payload = json_loads(response.read().decode("utf-8"))
+    except (urllib_error.URLError, TimeoutError, ValueError):
+        return None
+
+    if payload.get("status") != "success":
+        return None
+
+    asn = None
+    as_field = payload.get("as") or ""
+    if as_field.upper().startswith("AS"):
+        asn = as_field.split(" ", 1)[0][2:] or None
+
+    return {
+        "country": payload.get("country") or None,
+        "region": payload.get("regionName") or None,
+        "city": payload.get("city") or None,
+        "isp": payload.get("isp") or None,
+        "org": payload.get("org") or None,
+        "asn": asn,
+        "as_name": payload.get("asname") or None,
+        "reverse": payload.get("reverse") or None,
+        "is_datacenter": bool(payload.get("hosting")),
+        "is_proxy": bool(payload.get("proxy")),
+        "is_mobile": bool(payload.get("mobile")),
+    }
+
+
 def cache_ip_location(ip_address, location):
     get_db().execute(
         """
@@ -568,6 +837,45 @@ def cache_ip_location(ip_address, location):
             looked_up_at = excluded.looked_up_at
         """,
         (ip_address, location["label"], location["country"], location["region"], utc_now()),
+    )
+    get_db().commit()
+
+
+def is_datacenter_ip(ip_address):
+    """Return True if a public IP belongs to a datacenter/hosting provider.
+
+    Private, loopback, unknown, and invalid addresses are never datacenters.
+    Results are cached in the ip_locations table to avoid repeated ip-api calls.
+    """
+    if classify_client_ip(ip_address) != "public":
+        return False
+
+    cached = get_db().execute(
+        "SELECT is_datacenter FROM ip_locations WHERE ip_address = ?",
+        (ip_address,),
+    ).fetchone()
+    if cached is not None and cached["is_datacenter"] is not None:
+        return bool(cached["is_datacenter"])
+
+    details = fetch_ipapi_details(ip_address)
+    if not details:
+        # Lookup unavailable (e.g. rate limited); treat as non-datacenter and
+        # leave the cache unset so we can retry later.
+        return False
+
+    is_dc = bool(details.get("is_datacenter"))
+    store_datacenter_flag(ip_address, is_dc)
+    return is_dc
+
+
+def store_datacenter_flag(ip_address, is_datacenter):
+    get_db().execute(
+        """
+        INSERT INTO ip_locations (ip_address, label, looked_up_at, is_datacenter)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(ip_address) DO UPDATE SET is_datacenter = excluded.is_datacenter
+        """,
+        (ip_address, "Unknown", utc_now(), 1 if is_datacenter else 0),
     )
     get_db().commit()
 
