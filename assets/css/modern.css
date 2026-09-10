@@ -692,6 +692,9 @@ section.visible {
     transition: all var(--transition-normal);
     display: flex;
     flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
 
 .project-card:hover {
