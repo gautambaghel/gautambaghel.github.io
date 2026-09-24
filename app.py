@@ -31,6 +31,9 @@ ALLOWED_STATIC_FILES = {"index.html", "blog.html", "post.html", "CNAME", "favico
 REQUESTS_PAGE_SIZE = 25
 LOGINS_PAGE_SIZE = 15
 SUMMARY_PAGE_SIZE = 8
+# Max number of uncached public IPs to resolve via external lookup per dashboard
+# load. Keeps the request fast while the location cache self-heals over time.
+MAX_IP_LOOKUPS_PER_LOAD = 3
 
 
 def create_app():
@@ -224,6 +227,12 @@ def init_db():
             looked_up_at TEXT NOT NULL,
             is_datacenter INTEGER
         );
+
+        CREATE INDEX IF NOT EXISTS idx_traffic_timestamp ON traffic_logs (timestamp);
+        CREATE INDEX IF NOT EXISTS idx_traffic_path ON traffic_logs (path);
+        CREATE INDEX IF NOT EXISTS idx_traffic_referer ON traffic_logs (referer);
+        CREATE INDEX IF NOT EXISTS idx_traffic_is_auth ON traffic_logs (is_authenticated);
+        CREATE INDEX IF NOT EXISTS idx_login_audit_success ON login_audit (success);
         """
     )
     db.commit()
@@ -238,8 +247,13 @@ def ensure_ip_locations_columns(db):
 
 
 def bootstrap_admin_user():
-    username = os.environ.get("ADMIN_USERNAME", "admin")
-    password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    username = os.environ.get("ADMIN_USERNAME")
+    password = os.environ.get("ADMIN_PASSWORD")
+    if not username or not password:
+        raise RuntimeError(
+            "ADMIN_USERNAME and ADMIN_PASSWORD must be set. Refusing to start with "
+            "default/blank admin credentials."
+        )
     sync_password = os.environ.get("ADMIN_SYNC_PASSWORD", "false").lower() == "true"
     db = get_db()
     existing_user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
@@ -420,32 +434,57 @@ def get_top_ips(page=1, per_page=8, exclude_private_ips=False, exclude_bots=Fals
         """,
     ).fetchall()
 
-    enriched_rows = []
+    # First pass: normalise + classify (pure in-memory, no DB / network) and apply
+    # the private/datacenter filters so pagination is computed on the final set.
+    filtered = []
     for row in rows:
         client_ip = normalize_client_ip(row["client_ip"])
         ip_type = classify_client_ip(client_ip)
         if exclude_private_ips and ip_type in {"loopback", "private"}:
             continue
-        if residential_only and ip_type == "public" and is_datacenter_ip(client_ip):
+        if residential_only and ip_type == "public" and is_datacenter_ip_cached(client_ip):
             continue
-        location = get_ip_location(client_ip)
+        filtered.append((client_ip, row["hits"], row["last_seen"]))
+
+    total = len(filtered)
+    offset = (page - 1) * per_page
+    page_slice = filtered[offset: offset + per_page]
+
+    # Only enrich the IPs on the current page, and do it with a single batched
+    # query against the location cache instead of one query per IP (N+1).
+    locations = get_cached_ip_locations([ip for ip, _, _ in page_slice])
+
+    # Resolve at most a few uncached public IPs per load (bounded, short timeout)
+    # so the cache self-heals over time without ever blocking on the full set.
+    resolve_budget = MAX_IP_LOOKUPS_PER_LOAD
+    for client_ip, _, _ in page_slice:
+        if resolve_budget <= 0:
+            break
+        if client_ip in locations:
+            continue
+        if classify_client_ip(client_ip) != "public":
+            continue
+        resolved = fetch_ip_location(client_ip)
+        cache_ip_location(client_ip, resolved)
+        locations[client_ip] = resolved
+        resolve_budget -= 1
+
+    enriched_rows = []
+    for client_ip, hits, last_seen in page_slice:
+        location = locations.get(client_ip) or get_local_ip_label(client_ip)
         enriched_rows.append(
             {
                 "client_ip": client_ip,
-                "hits": row["hits"],
-                "last_seen": row["last_seen"],
+                "hits": hits,
+                "last_seen": last_seen,
                 "label": location["label"],
                 "country": location["country"],
                 "region": location["region"],
             }
         )
 
-    total = len(enriched_rows)
-    offset = (page - 1) * per_page
-    paged_rows = enriched_rows[offset: offset + per_page]
-
     pagination = build_pagination(page, per_page, total, "top_ips_page")
-    return {"rows": paged_rows, "pagination": pagination, "sort": get_sort_value(sort)}
+    return {"rows": enriched_rows, "pagination": pagination, "sort": get_sort_value(sort)}
 
 
 def get_top_referrers(page=1, per_page=8, exclude_bots=False, sort=DEFAULT_SORT):
@@ -678,6 +717,62 @@ def get_cached_ip_location(ip_address):
         "country": row["country"],
         "region": row["region"],
     }
+
+
+def get_local_ip_label(ip_address):
+    """Resolve label/country/region for an IP WITHOUT any external lookup.
+
+    Used on the dashboard render path: private/loopback/invalid IPs are labelled
+    locally, and public IPs fall back to a neutral label if not already cached.
+    Never triggers a blocking HTTP request.
+    """
+    ip_type = classify_client_ip(ip_address)
+    if ip_type in {"unknown", "invalid"}:
+        return {"label": "Unknown", "country": None, "region": None}
+    if ip_type == "loopback":
+        return {"label": "LocalHost", "country": None, "region": None}
+    if ip_type == "private":
+        return {"label": "Private Network", "country": None, "region": None}
+    return {"label": "Not yet resolved", "country": None, "region": None}
+
+
+def get_cached_ip_locations(ip_addresses):
+    """Batch-fetch cached locations for many IPs in a single query (avoids N+1).
+
+    Returns a dict keyed by ip_address. Only public IPs are queried; local
+    labels are handled by get_local_ip_label at the call site.
+    """
+    public_ips = [ip for ip in ip_addresses if classify_client_ip(ip) == "public"]
+    if not public_ips:
+        return {}
+
+    placeholders = ",".join("?" for _ in public_ips)
+    rows = get_db().execute(
+        f"SELECT ip_address, label, country, region FROM ip_locations WHERE ip_address IN ({placeholders})",
+        public_ips,
+    ).fetchall()
+    return {
+        row["ip_address"]: {"label": row["label"], "country": row["country"], "region": row["region"]}
+        for row in rows
+    }
+
+
+def is_datacenter_ip_cached(ip_address):
+    """Cache-only datacenter check for the render path.
+
+    Unlike is_datacenter_ip(), this never makes an external HTTP request. If the
+    flag has not been resolved yet, it conservatively returns False so the IP is
+    not filtered out (it can be enriched later by the background pass).
+    """
+    if classify_client_ip(ip_address) != "public":
+        return False
+    cached = get_db().execute(
+        "SELECT is_datacenter FROM ip_locations WHERE ip_address = ?",
+        (ip_address,),
+    ).fetchone()
+    if cached is not None and cached["is_datacenter"] is not None:
+        return bool(cached["is_datacenter"])
+    return False
 
 
 def fetch_ip_location(ip_address):
