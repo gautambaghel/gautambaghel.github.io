@@ -640,14 +640,24 @@
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                setStatus('Sending...', '');
-                submitBtn.disabled = true;
                 const payload = {
                     name: document.getElementById('contactName').value.trim(),
                     email: document.getElementById('contactEmail').value.trim(),
                     message: document.getElementById('contactMessage').value.trim(),
                     captcha: document.getElementById('contactCaptcha').value.trim()
                 };
+                if (!payload.name || !payload.email || !payload.message) {
+                    setStatus('Please fill in your name, email, and message.', 'error');
+                    return;
+                }
+                const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+                if (!emailRe.test(payload.email)) {
+                    setStatus('Please enter a valid email address.', 'error');
+                    document.getElementById('contactEmail').focus();
+                    return;
+                }
+                setStatus('Sending...', '');
+                submitBtn.disabled = true;
                 try {
                     const res = await fetch('/api/contact', {
                         method: 'POST',

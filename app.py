@@ -1,6 +1,7 @@
 import ipaddress
 import os
 import random
+import re
 import smtplib
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -185,7 +186,7 @@ def create_app():
 
         if not name or not email or not message:
             return {"ok": False, "error": "Name, email, and message are required."}, 400
-        if "@" not in email or "." not in email.split("@")[-1]:
+        if not is_valid_email(email):
             return {"ok": False, "error": "Please provide a valid email address."}, 400
         if len(message) > 5000 or len(name) > 200:
             return {"ok": False, "error": "Input is too long."}, 400
@@ -1055,6 +1056,30 @@ def serve_site_path(requested_path):
 
 def send_root_file(filename):
     return send_from_directory(BASE_DIR, filename)
+
+
+# Reasonable email validation: local part + domain with a valid TLD.
+# Not RFC-exhaustive, but rejects the obviously-malformed addresses that the
+# previous "contains @ and ." check let through.
+EMAIL_REGEX = re.compile(
+    r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+"
+    r"@"
+    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
+    r"[A-Za-z]{2,63}$"
+)
+
+
+def is_valid_email(email):
+    if not email or len(email) > 254:
+        return False
+    if " " in email or ".." in email:
+        return False
+    if email.startswith(".") or email.startswith("@"):
+        return False
+    local = email.rsplit("@", 1)[0]
+    if local.startswith(".") or local.endswith("."):
+        return False
+    return EMAIL_REGEX.match(email) is not None
 
 
 def send_contact_email(name, email, message):
