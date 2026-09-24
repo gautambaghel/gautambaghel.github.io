@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gautam Baghel - Senior Product Manager</title>
-    <link rel="icon" href="images/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">
+    <link rel="alternate icon" type="image/png" href="images/favicon.png?v=2">
     <link rel="stylesheet" href="assets/css/modern.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +57,12 @@
             margin: 0;
             font-size: 1.4rem;
             color: #e6f1ff;
+        }
+        .contact-modal-intro {
+            margin: 0 0 1.25rem;
+            color: #8892b0;
+            font-size: 0.95rem;
+            line-height: 1.6;
         }
         .contact-modal-close {
             background: none;
@@ -125,7 +132,7 @@
             <li><a href="#expertise">Expertise</a></li>
             <li><a href="#projects">Projects</a></li>
             <li><a href="blog.html">Blog</a></li>
-            <li><a href="#contact">Contact</a></li>
+            <li><a href="#" data-contact-open>Contact</a></li>
         </ul>
     </nav>
 
@@ -139,7 +146,7 @@
                     <p class="hero-description">Shaping the future of AI-powered infrastructure. Building agentic experiences with MCP servers, AI agents, and intelligent automation that transform how developers interact with cloud platforms.</p>
                     <div class="hero-cta">
                         <a href="#projects" class="btn btn-primary">View My Work</a>
-                        <a href="#contact" class="btn btn-secondary" data-contact-open>Get In Touch</a>
+                        <a href="#" class="btn btn-secondary" data-contact-open>Get In Touch</a>
                     </div>
                     <div class="hero-social">
                         <a href="https://github.com/gautambaghel" target="_blank" rel="noopener" aria-label="GitHub"><i class="fab fa-github"></i></a>
@@ -455,27 +462,6 @@
                 </div>
             </div>
         </section>
-
-        <section id="contact" class="contact">
-            <div class="container">
-                <h2 class="section-title"><span class="title-number">05.</span> Get In Touch</h2>
-                <div class="contact-content">
-                    <p class="contact-text">I'm always interested in hearing about new opportunities, interesting projects, or just connecting with fellow engineers. Whether you have a question or just want to say hi, feel free to reach out!</p>
-                    <a href="#" class="btn btn-primary btn-large" data-contact-open>Say Hello</a>
-                    <div class="contact-social">
-                        <a href="https://github.com/gautambaghel" target="_blank" rel="noopener" aria-label="GitHub">
-                            <i class="fab fa-github"></i>
-                        </a>
-                        <a href="https://www.linkedin.com/in/gautambaghel/" target="_blank" rel="noopener" aria-label="LinkedIn">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                        <a href="mailto:gautambaghel93@gmail.com" aria-label="Email">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer class="footer">
@@ -491,6 +477,7 @@
                 <button type="button" class="contact-modal-close" data-contact-close aria-label="Close">&times;</button>
             </div>
             <form id="contactForm" novalidate>
+                <p class="contact-modal-intro">I'm always interested in hearing about new opportunities, interesting projects, or just connecting with fellow engineers. Whether you have a question or just want to say hi, feel free to reach out!</p>
                 <div class="contact-field">
                     <label for="contactName">Name</label>
                     <input type="text" id="contactName" name="name" maxlength="200" required>
@@ -534,8 +521,10 @@
         // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href === '#' || href.length <= 1) return;
                 e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
+                const target = document.querySelector(href);
                 if (target) {
                     target.scrollIntoView({
                         behavior: 'smooth',
