@@ -41,6 +41,27 @@
         .admin-meta { color: var(--slate); }
         .admin-actions { display: flex; gap: 0.75rem; align-items: center; }
 
+        .back-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            border: 1px solid rgba(136, 146, 176, 0.25);
+            background: rgba(17, 34, 64, 0.4);
+            color: var(--slate);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .back-nav:hover {
+            color: var(--green);
+            border-color: var(--green);
+            transform: translateX(-3px);
+        }
+
         .panel {
             background: rgba(17, 34, 64, 0.6);
             border: 1px solid rgba(136, 146, 176, 0.18);
@@ -130,14 +151,12 @@
 </head>
 <body>
     <main class="admin-shell">
+        <a href="/admin" class="back-nav"><i class="fa-solid fa-arrow-left"></i> Back to Analytics</a>
         <header class="admin-header">
             <div>
                 <p class="hero-greeting">Private Dashboard</p>
                 <h1>IP Lookup</h1>
                 <p class="admin-meta">Inspect any IP address &mdash; datacenter/hosting, proxy, geo, and ASN details. Works for private and public IPs.</p>
-            </div>
-            <div class="admin-actions">
-                <a href="/admin" class="btn btn-secondary">Back to Analytics</a>
             </div>
         </header>
 
