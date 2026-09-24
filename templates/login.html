@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Gautam Baghel</title>
+    <link rel="icon" href="/images/favicon.png">
+    <link rel="stylesheet" href="/assets/css/modern.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --navy: var(--color-bg);
+            --slate: var(--color-text-muted);
+            --lightest-slate: var(--color-text);
+            --green: var(--color-accent);
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: radial-gradient(circle at top, rgba(100, 255, 218, 0.15), transparent 35%), var(--navy);
+        }
+
+        .login-shell {
+            width: min(100%, 460px);
+            padding: 2.5rem;
+            border: 1px solid rgba(100, 255, 218, 0.15);
+            border-radius: 24px;
+            background: rgba(17, 34, 64, 0.92);
+            box-shadow: 0 32px 80px rgba(2, 12, 27, 0.45);
+        }
+
+        .login-title {
+            margin-bottom: 0.75rem;
+        }
+
+        .login-subtitle {
+            margin-bottom: 2rem;
+            color: var(--slate);
+        }
+
+        .form-field {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--lightest-slate);
+            font-weight: 600;
+        }
+
+        .form-field input {
+            width: 100%;
+            padding: 0.95rem 1rem;
+            border: 1px solid rgba(136, 146, 176, 0.3);
+            border-radius: 14px;
+            background: rgba(10, 25, 47, 0.88);
+            color: var(--lightest-slate);
+        }
+
+        .form-field input:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.15);
+        }
+
+        .login-error {
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 99, 132, 0.12);
+            border: 1px solid rgba(255, 99, 132, 0.25);
+            color: #ffd1dc;
+        }
+
+        .login-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.75rem;
+        }
+
+        .login-link {
+            color: var(--green);
+            text-decoration: none;
+        }
+
+        @media (max-width: 640px) {
+            .login-shell {
+                padding: 2rem 1.5rem;
+            }
+
+            .login-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-shell">
+        <p class="hero-greeting">Private Access</p>
+        <h1 class="login-title">Admin Login</h1>
+        <p class="login-subtitle">Sign in to review traffic analytics and login activity for the site.</p>
+
+        {% if error %}
+        <div class="login-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            <div class="form-field">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" autocomplete="username" required>
+            </div>
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="login-actions">
+                <a class="login-link" href="/">Back to site</a>
+                <button class="btn btn-primary" type="submit">Sign In</button>
+            </div>
+        </form>
+    </main>
+</body>
+</html>
