@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup gautam-site (repo + DB + secrets) to 14TB drive
+After=media-gautam-GAUTAM_14TB.mount
+
+[Service]
+Type=oneshot
+ExecStart=/home/gautam/.local/bin/gautam-site-backup.sh
+Nice=10
+IOSchedulingClass=idle
