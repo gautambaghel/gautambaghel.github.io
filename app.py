@@ -1,7 +1,10 @@
 import ipaddress
 import os
+import random
+import smtplib
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from functools import wraps
 from pathlib import Path
 from urllib import error as urllib_error
@@ -34,6 +37,8 @@ SUMMARY_PAGE_SIZE = 8
 # Max number of uncached public IPs to resolve via external lookup per dashboard
 # load. Keeps the request fast while the location cache self-heals over time.
 MAX_IP_LOOKUPS_PER_LOAD = 3
+# Destination for contact form submissions.
+CONTACT_RECIPIENT = os.environ.get("CONTACT_RECIPIENT", "gautambagheldon@gmail.com")
 
 
 def create_app():
@@ -162,6 +167,52 @@ def create_app():
     @app.route("/health")
     def health():
         return {"status": "ok"}
+
+    @app.route("/api/contact/captcha", methods=["GET"])
+    def contact_captcha():
+        a = random.randint(1, 9)
+        b = random.randint(1, 9)
+        session["contact_captcha_answer"] = a + b
+        return {"question": f"What is {a} + {b}?"}
+
+    @app.route("/api/contact", methods=["POST"])
+    def contact_submit():
+        data = request.get_json(silent=True) or {}
+        name = (data.get("name") or "").strip()
+        email = (data.get("email") or "").strip()
+        message = (data.get("message") or "").strip()
+        captcha = (str(data.get("captcha") or "")).strip()
+
+        if not name or not email or not message:
+            return {"ok": False, "error": "Name, email, and message are required."}, 400
+        if "@" not in email or "." not in email.split("@")[-1]:
+            return {"ok": False, "error": "Please provide a valid email address."}, 400
+        if len(message) > 5000 or len(name) > 200:
+            return {"ok": False, "error": "Input is too long."}, 400
+
+        expected = session.get("contact_captcha_answer")
+        if expected is None:
+            return {"ok": False, "error": "Captcha expired. Please try again."}, 400
+        try:
+            captcha_ok = int(captcha) == int(expected)
+        except (TypeError, ValueError):
+            captcha_ok = False
+        if not captcha_ok:
+            return {"ok": False, "error": "Captcha answer is incorrect."}, 400
+
+        # Captcha consumed regardless of send outcome.
+        session.pop("contact_captcha_answer", None)
+
+        try:
+            send_contact_email(name=name, email=email, message=message)
+        except Exception:
+            current_app.logger.exception("Failed to send contact email")
+            return {
+                "ok": False,
+                "error": "Sorry, the message could not be sent right now. Please email directly.",
+            }, 500
+
+        return {"ok": True}
 
     @app.route("/<path:requested_path>")
     def site_files(requested_path):
@@ -1004,6 +1055,33 @@ def serve_site_path(requested_path):
 
 def send_root_file(filename):
     return send_from_directory(BASE_DIR, filename)
+
+
+def send_contact_email(name, email, message):
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_pass = os.environ.get("SMTP_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise RuntimeError("SMTP_USER and SMTP_PASS environment variables are not configured.")
+
+    msg = EmailMessage()
+    msg["Subject"] = f"Portfolio contact from {name}"
+    msg["From"] = smtp_user
+    msg["To"] = CONTACT_RECIPIENT
+    msg["Reply-To"] = email
+    msg.set_content(
+        f"You received a new message from your portfolio contact form.\n\n"
+        f"Name: {name}\n"
+        f"Email: {email}\n\n"
+        f"Message:\n{message}\n"
+    )
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
 
 
 def get_client_ip():

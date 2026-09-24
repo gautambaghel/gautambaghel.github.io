@@ -10,6 +10,101 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        .contact-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        .contact-modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .contact-modal {
+            background: #112240;
+            color: #ccd6f6;
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(2, 12, 27, 0.7);
+            transform: translateY(16px) scale(0.98);
+            transition: transform 0.25s ease;
+        }
+        .contact-modal-overlay.open .contact-modal {
+            transform: translateY(0) scale(1);
+        }
+        .contact-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .contact-modal-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #e6f1ff;
+        }
+        .contact-modal-close {
+            background: none;
+            border: none;
+            color: #8892b0;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            transition: color 0.2s ease;
+        }
+        .contact-modal-close:hover { color: #64ffda; }
+        .contact-field { margin-bottom: 1rem; }
+        .contact-field label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            color: #8892b0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .contact-field input,
+        .contact-field textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: #0a192f;
+            border: 1px solid rgba(100, 255, 218, 0.15);
+            border-radius: 6px;
+            padding: 0.7rem 0.85rem;
+            color: #e6f1ff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease;
+        }
+        .contact-field input:focus,
+        .contact-field textarea:focus {
+            outline: none;
+            border-color: #64ffda;
+        }
+        .contact-field textarea { resize: vertical; min-height: 110px; }
+        .contact-modal .btn { width: 100%; margin-top: 0.5rem; cursor: pointer; }
+        .contact-status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            min-height: 1.2em;
+        }
+        .contact-status.error { color: #ff6b6b; }
+        .contact-status.success { color: #64ffda; }
+        .contact-captcha-question { color: #64ffda; font-weight: 600; }
+    </style>
 </head>
 <body>
     <div class="cursor"></div>
@@ -44,7 +139,7 @@
                     <p class="hero-description">Shaping the future of AI-powered infrastructure. Building agentic experiences with MCP servers, AI agents, and intelligent automation that transform how developers interact with cloud platforms.</p>
                     <div class="hero-cta">
                         <a href="#projects" class="btn btn-primary">View My Work</a>
-                        <a href="#contact" class="btn btn-secondary">Get In Touch</a>
+                        <a href="#contact" class="btn btn-secondary" data-contact-open>Get In Touch</a>
                     </div>
                     <div class="hero-social">
                         <a href="https://github.com/gautambaghel" target="_blank" rel="noopener" aria-label="GitHub"><i class="fab fa-github"></i></a>
@@ -366,7 +461,7 @@
                 <h2 class="section-title"><span class="title-number">05.</span> Get In Touch</h2>
                 <div class="contact-content">
                     <p class="contact-text">I'm always interested in hearing about new opportunities, interesting projects, or just connecting with fellow engineers. Whether you have a question or just want to say hi, feel free to reach out!</p>
-                    <a href="mailto:gautambaghel93@gmail.com" class="btn btn-primary btn-large">Say Hello</a>
+                    <a href="#" class="btn btn-primary btn-large" data-contact-open>Say Hello</a>
                     <div class="contact-social">
                         <a href="https://github.com/gautambaghel" target="_blank" rel="noopener" aria-label="GitHub">
                             <i class="fab fa-github"></i>
@@ -388,6 +483,35 @@
             <p>Designed & Built by Gautam Baghel</p>
         </div>
     </footer>
+
+    <div class="contact-modal-overlay" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+        <div class="contact-modal">
+            <div class="contact-modal-header">
+                <h3 id="contactModalTitle">Get In Touch</h3>
+                <button type="button" class="contact-modal-close" data-contact-close aria-label="Close">&times;</button>
+            </div>
+            <form id="contactForm" novalidate>
+                <div class="contact-field">
+                    <label for="contactName">Name</label>
+                    <input type="text" id="contactName" name="name" maxlength="200" required>
+                </div>
+                <div class="contact-field">
+                    <label for="contactEmail">Email</label>
+                    <input type="email" id="contactEmail" name="email" required>
+                </div>
+                <div class="contact-field">
+                    <label for="contactMessage">Message</label>
+                    <textarea id="contactMessage" name="message" maxlength="5000" required></textarea>
+                </div>
+                <div class="contact-field">
+                    <label for="contactCaptcha">Verify you're human: <span class="contact-captcha-question" id="contactCaptchaQuestion">Loading...</span></label>
+                    <input type="text" id="contactCaptcha" name="captcha" inputmode="numeric" autocomplete="off" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="contactSubmit">Send Message</button>
+                <div class="contact-status" id="contactStatus" role="status" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
 
     <script>
         // Mobile navigation toggle
@@ -473,6 +597,92 @@
                 cursorFollower.classList.remove('hover');
             });
         });
+
+        // Contact modal
+        (function () {
+            const modal = document.getElementById('contactModal');
+            const form = document.getElementById('contactForm');
+            const statusEl = document.getElementById('contactStatus');
+            const captchaQuestion = document.getElementById('contactCaptchaQuestion');
+            const submitBtn = document.getElementById('contactSubmit');
+
+            function setStatus(msg, type) {
+                statusEl.textContent = msg || '';
+                statusEl.className = 'contact-status' + (type ? ' ' + type : '');
+            }
+
+            async function loadCaptcha() {
+                captchaQuestion.textContent = 'Loading...';
+                try {
+                    const res = await fetch('/api/contact/captcha', { credentials: 'same-origin' });
+                    const data = await res.json();
+                    captchaQuestion.textContent = data.question;
+                } catch (e) {
+                    captchaQuestion.textContent = 'Could not load captcha';
+                }
+            }
+
+            function openModal(e) {
+                if (e) e.preventDefault();
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+                setStatus('');
+                loadCaptcha();
+                setTimeout(() => document.getElementById('contactName').focus(), 100);
+            }
+
+            function closeModal() {
+                modal.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+
+            document.querySelectorAll('[data-contact-open]').forEach(el => {
+                el.addEventListener('click', openModal);
+            });
+            document.querySelectorAll('[data-contact-close]').forEach(el => {
+                el.addEventListener('click', closeModal);
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setStatus('Sending...', '');
+                submitBtn.disabled = true;
+                const payload = {
+                    name: document.getElementById('contactName').value.trim(),
+                    email: document.getElementById('contactEmail').value.trim(),
+                    message: document.getElementById('contactMessage').value.trim(),
+                    captcha: document.getElementById('contactCaptcha').value.trim()
+                };
+                try {
+                    const res = await fetch('/api/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.ok) {
+                        setStatus('Thanks! Your message has been sent.', 'success');
+                        form.reset();
+                        setTimeout(closeModal, 2000);
+                    } else {
+                        setStatus(data.error || 'Something went wrong. Please try again.', 'error');
+                        document.getElementById('contactCaptcha').value = '';
+                        loadCaptcha();
+                    }
+                } catch (err) {
+                    setStatus('Network error. Please try again.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        })();
     </script>
 </body>
 </html>
