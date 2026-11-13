@@ -453,6 +453,8 @@ section.visible {
 
 .image-wrapper img {
     width: 100%;
+    height: auto;
+    display: block;
     border-radius: var(--border-radius-lg);
     position: relative;
     z-index: 2;

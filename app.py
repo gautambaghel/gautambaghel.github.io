@@ -1,4 +1,5 @@
 import ipaddress
+import mimetypes
 import os
 import random
 import re
@@ -31,6 +32,9 @@ BASE_DIR = Path(__file__).resolve().parent
 INSTANCE_DIR = BASE_DIR / "instance"
 DATABASE_PATH = INSTANCE_DIR / "site.db"
 ALLOWED_STATIC_DIRS = {"assets", "blogs", "downloadables", "images"}
+IMAGE_MAX_AGE = 7 * 24 * 3600
+# slim images lack /etc/mime.types, so .webp would be sent as octet-stream
+mimetypes.add_type("image/webp", ".webp")
 ALLOWED_STATIC_FILES = {"index.html", "blog.html", "post.html", "CNAME", "favicon.ico"}
 REQUESTS_PAGE_SIZE = 25
 LOGINS_PAGE_SIZE = 15
@@ -1051,6 +1055,9 @@ def serve_site_path(requested_path):
     if not safe_path or not Path(safe_path).is_file():
         abort(404)
 
+    if first_segment == "images":
+        # Images rarely change: let browsers and Cloudflare keep them for a week.
+        return send_from_directory(BASE_DIR, normalized_path, max_age=IMAGE_MAX_AGE)
     return send_from_directory(BASE_DIR, normalized_path)
 
 
