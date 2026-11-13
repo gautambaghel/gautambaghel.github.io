@@ -6,8 +6,8 @@
     <title>Blog - Gautam Baghel</title>
     <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">
     <link rel="alternate icon" type="image/png" href="images/favicon.png?v=2">
-    <link rel="stylesheet" href="assets/css/modern.css?v=20261112">
-    <link rel="stylesheet" href="assets/css/blog.css">
+    <link rel="stylesheet" href="assets/css/modern.css?v=20261112b">
+    <link rel="stylesheet" href="assets/css/blog.css?v=20261112b">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,8 +111,61 @@
         });
 
         // Blog functionality
+        // State lives in the URL so filters are linkable (e.g. from the
+        // homepage expertise tiles): blog.html?tags=ai,mcp#hashicorp
+        //   ?tags=  selected tags, comma separated; a post matches if it has ANY of them
+        //   #hash   category (all | hashicorp | blackduck | personal)
+        var CATEGORIES = ['all', 'hashicorp', 'blackduck', 'personal'];
+        var TAG_CLOUD_LIMIT = 15;
         var blogsData = null;
-        var currentCategory = 'all';
+        var state = { category: 'all', tags: [] };
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, function(c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function readStateFromUrl() {
+            var params = new URLSearchParams(window.location.search);
+            var tags = (params.get('tags') || '').split(',')
+                .map(function(t) { return t.trim().toLowerCase(); })
+                .filter(function(t, i, arr) { return t && arr.indexOf(t) === i; });
+            var hash = window.location.hash.substring(1);
+            state.category = CATEGORIES.indexOf(hash) !== -1 ? hash : 'all';
+            state.tags = tags;
+        }
+
+        function writeStateToUrl() {
+            var url = window.location.pathname;
+            if (state.tags.length) {
+                url += '?tags=' + state.tags.map(encodeURIComponent).join(',');
+            }
+            if (state.category !== 'all') {
+                url += '#' + state.category;
+            }
+            history.pushState(null, '', url);
+        }
+
+        function setState(changes) {
+            if (changes.category !== undefined) state.category = changes.category;
+            if (changes.tags !== undefined) state.tags = changes.tags;
+            writeStateToUrl();
+            render();
+        }
+
+        function toggleTag(tag) {
+            var tags = state.tags.slice();
+            var i = tags.indexOf(tag);
+            if (i === -1) tags.push(tag); else tags.splice(i, 1);
+            setState({ tags: tags });
+        }
+
+        function render() {
+            renderCategoryButtons();
+            renderTags();
+            renderPosts();
+        }
 
         // Fetch blogs data
         function fetchBlogs() {
@@ -128,21 +181,24 @@
                 })
                 .then(function(data) {
                     blogsData = data;
-                    renderPosts();
-                    renderTags();
+                    render();
                     return data;
                 })
                 .catch(function(error) {
                     console.error('Error loading blogs:', error);
-                    postsGrid.innerHTML = '<p class="error-message">Unable to load blog posts. Error: ' + error.message + '</p>';
+                    postsGrid.innerHTML = '<p class="error-message">Unable to load blog posts. Error: ' + escapeHtml(error.message) + '</p>';
                 });
         }
 
-        // Render posts based on category
-        function renderPosts(category, tag) {
-            category = category || 'all';
-            tag = tag || null;
+        function renderCategoryButtons() {
+            var allBtns = document.querySelectorAll('.category-btn');
+            for (var i = 0; i < allBtns.length; i++) {
+                allBtns[i].classList.toggle('active', allBtns[i].getAttribute('data-category') === state.category);
+            }
+        }
 
+        // Render posts for the current category + tags
+        function renderPosts() {
             var postsGrid = document.getElementById('postsGrid');
             var categoryTitle = document.getElementById('categoryTitle');
             var postCount = document.getElementById('postCount');
@@ -152,21 +208,11 @@
                 return;
             }
 
-            var posts = blogsData.posts.slice(); // Create a copy
-
-            // Filter by category
-            if (category !== 'all') {
-                posts = posts.filter(function(post) {
-                    return post.category === category;
-                });
-            }
-
-            // Filter by tag
-            if (tag) {
-                posts = posts.filter(function(post) {
-                    return post.tags && post.tags.indexOf(tag) !== -1;
-                });
-            }
+            var posts = blogsData.posts.filter(function(post) {
+                if (state.category !== 'all' && post.category !== state.category) return false;
+                if (!state.tags.length) return true;
+                return (post.tags || []).some(function(t) { return state.tags.indexOf(t) !== -1; });
+            });
 
             // Sort by date (newest first)
             posts.sort(function(a, b) {
@@ -174,171 +220,121 @@
             });
 
             // Update header
-            if (tag) {
-                categoryTitle.textContent = 'Tagged: ' + tag;
-            } else if (category === 'all') {
-                categoryTitle.textContent = 'All Posts';
-            } else {
-                var catInfo = blogsData.categories[category];
-                categoryTitle.textContent = catInfo ? catInfo.name : category;
+            var catInfo = blogsData.categories[state.category];
+            var title = state.category === 'all' ? 'All Posts' : (catInfo ? catInfo.name : state.category);
+            if (state.tags.length) {
+                title = (state.category === 'all' ? '' : title + ' \u00b7 ') + 'Tagged: ' + state.tags.join(', ');
             }
+            categoryTitle.textContent = title;
             postCount.textContent = posts.length + ' post' + (posts.length !== 1 ? 's' : '');
 
-            // Render posts
             if (posts.length === 0) {
-                postsGrid.innerHTML = '<p class="no-posts">No posts found in this category yet.</p>';
+                postsGrid.innerHTML = '<p class="no-posts">No posts match these filters yet.</p>';
                 return;
             }
 
-            var html = posts.map(function(post) {
+            postsGrid.innerHTML = posts.map(function(post) {
                 var categoryInfo = blogsData.categories[post.category] || {};
-                var dateObj = new Date(post.date);
-                var date = dateObj.toLocaleDateString('en-US', {
+                var date = new Date(post.date).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
                 });
 
-                var tagsHtml = '';
-                if (post.tags && post.tags.length > 0) {
-                    tagsHtml = post.tags.map(function(t) {
-                        return '<span class="tag" data-tag="' + t + '">' + t + '</span>';
-                    }).join('');
-                }
+                var tagsHtml = (post.tags || []).map(function(t) {
+                    var active = state.tags.indexOf(t) !== -1 ? ' active' : '';
+                    return '<span class="tag' + active + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</span>';
+                }).join('');
 
                 var externalBadge = post.external ? '<span class="external-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i> External</span>' : '';
 
-                return '<article class="post-card" data-post-id="' + post.id + '" data-external="' + post.external + '" data-url="' + (post.url || '') + '" data-file="' + (post.file || '') + '">' +
+                return '<article class="post-card" data-post-id="' + escapeHtml(post.id) + '">' +
                     '<div class="post-category">' +
-                        '<i class="' + (categoryInfo.icon || 'fa-solid fa-file-alt') + '"></i>' +
-                        '<span>' + (categoryInfo.name || post.category) + '</span>' +
+                        '<i class="' + escapeHtml(categoryInfo.icon || 'fa-solid fa-file-alt') + '"></i>' +
+                        '<span>' + escapeHtml(categoryInfo.name || post.category) + '</span>' +
                     '</div>' +
-                    '<h3 class="post-title">' + post.title + '</h3>' +
-                    '<p class="post-excerpt">' + post.excerpt + '</p>' +
+                    '<h3 class="post-title">' + escapeHtml(post.title) + '</h3>' +
+                    '<p class="post-excerpt">' + escapeHtml(post.excerpt) + '</p>' +
                     '<div class="post-meta">' +
                         '<span class="post-date">' +
                             '<i class="fa-regular fa-calendar"></i> ' +
-                            date +
+                            escapeHtml(date) +
                         '</span>' +
                         externalBadge +
                     '</div>' +
                     '<div class="post-tags">' + tagsHtml + '</div>' +
                 '</article>';
             }).join('');
-
-            postsGrid.innerHTML = html;
-
-            // Add click handlers to posts
-            var postCards = document.querySelectorAll('.post-card');
-            for (var i = 0; i < postCards.length; i++) {
-                postCards[i].addEventListener('click', handlePostClick);
-            }
-
-            // Add click handlers to tags
-            var tagElements = document.querySelectorAll('.post-tags .tag');
-            for (var j = 0; j < tagElements.length; j++) {
-                tagElements[j].addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var tagName = e.target.getAttribute('data-tag');
-                    renderPosts('all', tagName);
-                });
-            }
         }
 
-        // Handle post click
-        function handlePostClick(e) {
-            var card = e.currentTarget;
-            var postId = card.getAttribute('data-post-id');
-
-            if (postId) {
-                // Always navigate to local post page (handles both local and external posts)
-                window.location.href = 'post.html?id=' + encodeURIComponent(postId);
-            }
-        }
-
-        // Render tag cloud
+        // Tag cloud: top tags by count, plus any selected tag outside the top list
         function renderTags() {
             var tagCloud = document.getElementById('tagCloud');
-            var allTags = {};
-
             if (!blogsData || !blogsData.posts) return;
 
+            var counts = {};
             blogsData.posts.forEach(function(post) {
-                if (post.tags) {
-                    post.tags.forEach(function(tag) {
-                        allTags[tag] = (allTags[tag] || 0) + 1;
-                    });
-                }
+                (post.tags || []).forEach(function(tag) {
+                    counts[tag] = (counts[tag] || 0) + 1;
+                });
             });
 
-            var sortedTags = Object.keys(allTags)
-                .map(function(tag) {
-                    return [tag, allTags[tag]];
-                })
-                .sort(function(a, b) {
-                    return b[1] - a[1];
-                })
-                .slice(0, 15);
+            var shown = Object.keys(counts)
+                .sort(function(a, b) { return counts[b] - counts[a] || a.localeCompare(b); })
+                .slice(0, TAG_CLOUD_LIMIT);
+            state.tags.forEach(function(tag) {
+                if (shown.indexOf(tag) === -1) shown.push(tag);
+            });
 
-            tagCloud.innerHTML = sortedTags.map(function(item) {
-                return '<button class="tag-btn" data-tag="' + item[0] + '">' + item[0] + ' <span>(' + item[1] + ')</span></button>';
+            var html = shown.map(function(tag) {
+                var active = state.tags.indexOf(tag) !== -1;
+                return '<button class="tag-btn' + (active ? ' active' : '') + '" data-tag="' + escapeHtml(tag) +
+                    '" aria-pressed="' + active + '">' + escapeHtml(tag) + ' <span>(' + (counts[tag] || 0) + ')</span></button>';
             }).join('');
-
-            // Add click handlers
-            var tagBtns = document.querySelectorAll('.tag-btn');
-            for (var i = 0; i < tagBtns.length; i++) {
-                tagBtns[i].addEventListener('click', function(e) {
-                    var tag = e.currentTarget.getAttribute('data-tag');
-                    renderPosts('all', tag);
-                });
+            if (state.tags.length) {
+                html += '<button class="tag-clear" type="button">Clear tags</button>';
             }
+            tagCloud.innerHTML = html;
         }
 
-        // Category filter buttons
+        // Event delegation (elements are re-rendered on every state change)
+        document.getElementById('tagCloud').addEventListener('click', function(e) {
+            if (e.target.closest('.tag-clear')) {
+                setState({ tags: [] });
+                return;
+            }
+            var btn = e.target.closest('.tag-btn');
+            if (btn) toggleTag(btn.getAttribute('data-tag'));
+        });
+
+        document.getElementById('postsGrid').addEventListener('click', function(e) {
+            var tag = e.target.closest('.post-tags .tag');
+            if (tag) {
+                toggleTag(tag.getAttribute('data-tag'));
+                return;
+            }
+            var card = e.target.closest('.post-card');
+            if (card && card.getAttribute('data-post-id')) {
+                window.location.href = 'post.html?id=' + encodeURIComponent(card.getAttribute('data-post-id'));
+            }
+        });
+
         var categoryBtns = document.querySelectorAll('.category-btn');
         for (var i = 0; i < categoryBtns.length; i++) {
             categoryBtns[i].addEventListener('click', function(e) {
-                var allBtns = document.querySelectorAll('.category-btn');
-                for (var j = 0; j < allBtns.length; j++) {
-                    allBtns[j].classList.remove('active');
-                }
-                e.currentTarget.classList.add('active');
-                currentCategory = e.currentTarget.getAttribute('data-category');
-                renderPosts(currentCategory);
-                // Update URL hash
-                if (history.pushState) {
-                    history.pushState(null, '', '#' + currentCategory);
-                }
+                setState({ category: e.currentTarget.getAttribute('data-category') });
             });
         }
 
-        // Handle URL hash for category filtering
-        function handleHashChange() {
-            var hash = window.location.hash.substring(1);
-            if (hash && ['hashicorp', 'blackduck', 'personal', 'all'].indexOf(hash) !== -1) {
-                currentCategory = hash;
-                var allBtns = document.querySelectorAll('.category-btn');
-                for (var i = 0; i < allBtns.length; i++) {
-                    var btnCat = allBtns[i].getAttribute('data-category');
-                    if (btnCat === hash) {
-                        allBtns[i].classList.add('active');
-                    } else {
-                        allBtns[i].classList.remove('active');
-                    }
-                }
-                if (blogsData) {
-                    renderPosts(currentCategory);
-                }
-            }
-        }
+        // Back/forward and manual hash edits
+        window.addEventListener('popstate', function() {
+            readStateFromUrl();
+            if (blogsData) render();
+        });
 
-        window.addEventListener('hashchange', handleHashChange);
-
-        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            fetchBlogs().then(function() {
-                handleHashChange();
-            });
+            readStateFromUrl();
+            fetchBlogs();
         });
     </script>
 </body>

@@ -20,8 +20,8 @@
     <meta name="twitter:description" id="twitterDescription" content="Blog post by Gautam Baghel">
     <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">
     <link rel="alternate icon" type="image/png" href="images/favicon.png?v=2">
-    <link rel="stylesheet" href="assets/css/modern.css?v=20261112">
-    <link rel="stylesheet" href="assets/css/blog.css">
+    <link rel="stylesheet" href="assets/css/modern.css?v=20261112b">
+    <link rel="stylesheet" href="assets/css/blog.css?v=20261112b">
     <link rel="stylesheet" href="assets/css/post.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -321,7 +321,7 @@
             if (post.tags && post.tags.length > 0) {
                 var tagsEl = document.getElementById('postTags');
                 tagsEl.innerHTML = post.tags.map(function(tag) {
-                    return '<a href="blog.html#' + tag + '" class="tag" role="listitem">' + tag + '</a>';
+                    return '<a href="blog.html?tags=' + encodeURIComponent(tag) + '" class="tag" role="listitem">' + tag + '</a>';
                 }).join('');
             }
         }

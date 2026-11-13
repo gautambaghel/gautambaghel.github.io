@@ -144,6 +144,30 @@
     color: white;
 }
 
+.tag-btn.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.tag-clear {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    padding: 0.35rem 0.25rem;
+}
+
+.tag-clear:hover {
+    text-decoration: underline;
+}
+
+.post-tags .tag.active {
+    background: var(--color-primary);
+    color: white;
+}
+
 .tag-btn span {
     opacity: 0.6;
     margin-left: 0.25rem;
